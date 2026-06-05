@@ -20,7 +20,11 @@ export const metadata: Metadata = {
   description: "A task tracker for engineering teams with a built-in AI agent layer.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+interface RootLayoutProps {
+  children: React.ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" className={`${plusJakarta.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans antialiased">

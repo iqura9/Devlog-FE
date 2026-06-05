@@ -111,7 +111,7 @@ export function StandupPanel() {
         state={loading ? "running" : result ? "done" : "idle"}
       />
 
-      {result && (
+      {result ? (
         <>
           {/* Slack-style message card */}
           <div className="rounded-lg border border-border bg-card p-3.5">
@@ -157,7 +157,7 @@ export function StandupPanel() {
             </div>
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }

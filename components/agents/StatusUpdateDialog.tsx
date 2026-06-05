@@ -87,11 +87,11 @@ export function StatusUpdateDialog({ open, task, onClose }: StatusUpdateDialogPr
           <DialogTitle className="flex items-center gap-2">
             <MessageSquareText className="h-4 w-4 text-primary" />
             Status update
-            {result && (
+            {result ? (
               <span className="ml-1">
                 <ModelBadge model={result.model} />
               </span>
-            )}
+            ) : null}
           </DialogTitle>
           <DialogDescription className="line-clamp-1">{task?.title}</DialogDescription>
         </DialogHeader>

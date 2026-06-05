@@ -7,7 +7,11 @@ import type { Status, Task, TaskWithSubtasks } from "@/lib/types";
 export type StatusFilter = Status | "all";
 export type SortKey = "priority" | "createdAt" | "updatedAt";
 
-/** Compare task priorities for sorting: high > medium > low */
+interface UseTasksInit {
+  initialTasks?: Task[];
+  initialError?: string | null;
+}
+
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 function sortTasks(tasks: TaskWithSubtasks[], sort: SortKey): TaskWithSubtasks[] {
@@ -18,23 +22,21 @@ function sortTasks(tasks: TaskWithSubtasks[], sort: SortKey): TaskWithSubtasks[]
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     }
     if (sort === "createdAt") {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // newest first
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
-    // updatedAt — most recently updated first
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 }
 
-export function useTasks() {
-  const [flat, setFlat] = useState<Task[]>([]);
+export function useTasks({ initialTasks, initialError }: UseTasksInit = {}) {
+  const [flat, setFlat] = useState<Task[]>(initialTasks ?? []);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<SortKey>("priority");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(!initialTasks);
+  const [error, setError] = useState<string | null>(initialError ?? null);
 
   const refresh = useCallback(async () => {
     try {
-      // Fetch all tasks (root + children) in one request; sort server-side by priority/createdAt.
       const apiSort = sort === "updatedAt" ? "priority" : sort;
       const data = await api.listTasks({ sortBy: apiSort });
       setFlat(data);
@@ -47,10 +49,9 @@ export function useTasks() {
   }, [sort]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (!initialTasks) refresh();
+  }, [refresh]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /** Group flat list into top-level tasks with their subtasks attached. */
   const grouped = useMemo((): TaskWithSubtasks[] => {
     const children = new Map<number, Task[]>();
     for (const t of flat) {
@@ -66,7 +67,6 @@ export function useTasks() {
     return sortTasks(roots, sort);
   }, [flat, sort]);
 
-  /** Status counts over top-level tasks only. */
   const counts = useMemo(() => {
     const c: Record<StatusFilter, number> = { all: 0, todo: 0, "in-progress": 0, done: 0 };
     for (const t of grouped) {

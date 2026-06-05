@@ -128,11 +128,11 @@ export function DecomposeDialog({ open, task, onClose, onApplied }: DecomposeDia
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="h-4 w-4 text-primary" />
             Decompose task
-            {model && (
+            {model ? (
               <span className="ml-1">
                 <ModelBadge model={model} />
               </span>
-            )}
+            ) : null}
           </DialogTitle>
           <DialogDescription className="line-clamp-1">{task?.title}</DialogDescription>
         </DialogHeader>
@@ -142,17 +142,17 @@ export function DecomposeDialog({ open, task, onClose, onApplied }: DecomposeDia
           state={phase === "loading" ? "running" : phase === "error" || phase === "unavailable" ? "idle" : "done"}
         />
 
-        {phase === "loading" && (
+        {phase === "loading" ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             Agent is analysing the task…
           </p>
-        )}
+        ) : null}
 
-        {phase === "error" && (
+        {phase === "error" ? (
           <div className="py-4 text-center text-sm text-destructive">{errorMsg}</div>
-        )}
+        ) : null}
 
-        {phase === "unavailable" && (
+        {phase === "unavailable" ? (
           <div className="rounded-lg border border-border bg-muted/40 p-4 text-center">
             <AlertCircle className="mx-auto mb-2 h-5 w-5 text-muted-foreground/60" />
             <p className="text-[13px] font-semibold">AI agents unavailable</p>
@@ -161,9 +161,9 @@ export function DecomposeDialog({ open, task, onClose, onApplied }: DecomposeDia
               <code className="rounded bg-muted px-1 font-mono">Backend/.env</code> to enable agents.
             </p>
           </div>
-        )}
+        ) : null}
 
-        {phase === "clarify" && (
+        {phase === "clarify" ? (
           <div className="flex flex-col gap-4">
             <div className="flex items-start gap-2 rounded-lg border border-accent-foreground/15 bg-accent/60 px-3 py-2.5 text-[13px] text-accent-foreground">
               <HelpCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -190,9 +190,9 @@ export function DecomposeDialog({ open, task, onClose, onApplied }: DecomposeDia
               </Button>
             </div>
           </div>
-        )}
+        ) : null}
 
-        {phase === "subtasks" && (
+        {phase === "subtasks" ? (
           <div className="flex flex-col gap-3">
             <ul className="flex flex-col gap-1.5">
               {subtasks.map((s, i) => (
@@ -217,11 +217,11 @@ export function DecomposeDialog({ open, task, onClose, onApplied }: DecomposeDia
                       {selected.has(i) ? "✓" : ""}
                     </span>
                     <span className="flex-1">{s.title}</span>
-                    {s.priority && (
+                    {s.priority ? (
                       <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
                         {s.priority}
                       </span>
-                    )}
+                    ) : null}
                   </button>
                 </li>
               ))}
@@ -242,7 +242,7 @@ export function DecomposeDialog({ open, task, onClose, onApplied }: DecomposeDia
               </div>
             </div>
           </div>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   );

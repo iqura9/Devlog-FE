@@ -89,7 +89,7 @@ export function StaleTriage({ onChanged }: StaleTriageProps) {
         state={loading ? "running" : result ? "done" : "idle"}
       />
 
-      {result && (
+      {result ? (
         <>
           <div className="rounded-lg border border-border bg-card p-3.5">
             <Markdown>{result.output}</Markdown>
@@ -112,7 +112,7 @@ export function StaleTriage({ onChanged }: StaleTriageProps) {
             </Button>
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }

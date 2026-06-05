@@ -63,7 +63,7 @@ export function PlanDay() {
         state={loading ? "running" : result ? "done" : "idle"}
       />
 
-      {result && (
+      {result ? (
         <>
           <div className="rounded-lg border border-border bg-card p-3.5">
             <Markdown>{result.output}</Markdown>
@@ -73,7 +73,7 @@ export function PlanDay() {
             <ModelBadge model={result.model} />
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }
