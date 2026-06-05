@@ -1,0 +1,152 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, ChevronRight, Check } from "lucide-react";
+import { PriorityBadge, StatusBadge } from "@/components/badges";
+import { ageLabel, ageInDays } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import type { Priority, TaskWithSubtasks } from "@/lib/types";
+
+const ACCENT_BAR: Record<Priority, string> = {
+  high: "before:bg-priority-high",
+  medium: "before:bg-priority-medium",
+  low: "before:bg-priority-low",
+};
+
+const SUBTASK_BORDER: Record<Priority, string> = {
+  high: "border-l-priority-high",
+  medium: "border-l-priority-medium",
+  low: "border-l-priority-low",
+};
+
+interface TaskCardProps {
+  task: TaskWithSubtasks;
+  staleThreshold: number;
+}
+
+export function TaskCard({ task, staleThreshold }: TaskCardProps) {
+  const router = useRouter();
+  const [expanded, setExpanded] = useState(false);
+
+  const doneCount = task.subtasks.filter((s) => s.status === "done").length;
+  const isStale = task.status !== "done" && ageInDays(task.updatedAt) >= staleThreshold;
+
+  function handleCardClick(e: React.MouseEvent) {
+    if ((e.target as HTMLElement).closest("button, a, input, select, [role='button']")) return;
+    router.push(`/tasks/${task.id}`);
+  }
+
+  return (
+    <article
+      onClick={handleCardClick}
+      className={cn(
+        "relative overflow-hidden rounded-xl border border-border bg-card p-4 shadow-soft",
+        "cursor-pointer transition-all hover:-translate-y-px hover:shadow-card",
+        "before:absolute before:inset-y-0 before:left-0 before:w-[3px]",
+        ACCENT_BAR[task.priority]
+      )}
+    >
+      <h3 className="text-[15.5px] font-bold leading-snug tracking-tight">{task.title}</h3>
+
+      {task.description && (
+        <p className="mt-1 line-clamp-2 text-[13.5px] leading-relaxed text-muted-foreground">
+          {task.description}
+        </p>
+      )}
+
+      {/* Badges row */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <StatusBadge status={task.status} />
+        <PriorityBadge priority={task.priority} />
+        <span className="font-mono text-xs text-muted-foreground">{ageLabel(task.createdAt)}</span>
+        {isStale && (
+          <span className="font-mono text-xs font-semibold text-priority-high">· stale</span>
+        )}
+
+        {/* Subtask expand toggle */}
+        {task.subtasks.length > 0 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded((v) => !v);
+            }}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5",
+              "font-mono text-[11px] transition-colors",
+              expanded
+                ? "border-primary/40 bg-primary/5 text-primary"
+                : "border-border bg-muted/50 text-muted-foreground hover:border-primary/30 hover:text-foreground"
+            )}
+          >
+            {expanded ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronRight className="h-3 w-3" />
+            )}
+            {expanded ? "Hide" : "Show"} {task.subtasks.length} subtask
+            {task.subtasks.length !== 1 ? "s" : ""}
+            {doneCount > 0 && (
+              <span className="text-status-done">&nbsp;· {doneCount} done</span>
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Expanded subtask list */}
+      {expanded && task.subtasks.length > 0 && (
+        <div className="mt-3.5 border-t border-dashed border-border pt-3.5">
+          {/* Progress bar */}
+          <div className="mb-2.5 flex items-center gap-2.5">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+              Subtasks {doneCount}/{task.subtasks.length}
+            </span>
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-status-done transition-all duration-300"
+                style={{
+                  width: `${Math.round((doneCount / task.subtasks.length) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          <ul className="flex flex-col gap-1.5">
+            {task.subtasks.map((sub) => {
+              const done = sub.status === "done";
+              return (
+                <li
+                  key={sub.id}
+                  className="flex items-center gap-2.5 rounded-lg border border-border bg-background py-2 pl-3 pr-3"
+                >
+                  {/* Visual done indicator — not interactive (go to detail to toggle) */}
+                  <div
+                    className={cn(
+                      "grid h-4 w-4 shrink-0 place-items-center rounded-[5px] border-[1.5px]",
+                      done
+                        ? "border-status-done bg-status-done text-white"
+                        : "border-border"
+                    )}
+                  >
+                    {done && <Check className="h-2.5 w-2.5" strokeWidth={4} />}
+                  </div>
+
+                  <span
+                    className={cn(
+                      "flex-1 text-[13px]",
+                      done && "text-muted-foreground/60 line-through"
+                    )}
+                  >
+                    {sub.title}
+                  </span>
+
+                  <StatusBadge status={sub.status} />
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </article>
+  );
+}
