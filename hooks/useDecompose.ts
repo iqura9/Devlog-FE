@@ -64,7 +64,14 @@ export function useDecompose(task: Task, onApplied: (created: Task[]) => void) {
     setPhase("applying");
     try {
       const created = await Promise.all(
-        toCreate.map((s) => api.createSubtask(task.id, { title: s.title, priority: s.priority })),
+        toCreate.map((s) =>
+          api.createSubtask(task.id, {
+            title: s.title,
+            description: s.description,
+            priority: s.priority,
+            estimation: s.estimation,
+          }),
+        ),
       );
       onApplied(created);
       toast.success(`Added ${created.length} subtask${created.length !== 1 ? "s" : ""}`);

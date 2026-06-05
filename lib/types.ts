@@ -53,6 +53,7 @@ export interface DecomposeSubtask {
   title: string;
   description?: string;
   priority?: Priority;
+  estimation?: number; // hours
 }
 
 export interface DecomposeDecomposed {

@@ -15,6 +15,7 @@ import {
   Sparkles,
   AlertCircle,
   RotateCcw,
+  Maximize2,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Priority, Status, Task } from "@/lib/types";
@@ -28,6 +29,7 @@ import { useTaskEditor } from "@/hooks/useTaskEditor";
 import { useSubtasks } from "@/hooks/useSubtasks";
 import { useDecompose } from "@/hooks/useDecompose";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { SubtaskDialog } from "./SubtaskDialog";
 import { Header } from "./Header";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -65,6 +67,9 @@ export function TaskDetailView({
   // Subtask inline title editing (UI-local)
   const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null);
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState("");
+
+  // Subtask description viewer (UI-local)
+  const [viewingSubtask, setViewingSubtask] = useState<Task | null>(null);
 
   useEffect(() => {
     if (addingSubtask) subtaskInputRef.current?.focus();
@@ -270,6 +275,16 @@ export function TaskDetailView({
                           variant="pill"
                         />
 
+                        {/* Open subtask description in a dialog */}
+                        <button
+                          onClick={() => setViewingSubtask(sub)}
+                          className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-muted-foreground/40 opacity-0 transition-all group-hover:opacity-100 hover:bg-primary/10 hover:text-primary"
+                          aria-label="View subtask description"
+                          title="View description"
+                        >
+                          <Maximize2 className="h-3.5 w-3.5" />
+                        </button>
+
                         {/* Delete subtask */}
                         <ConfirmDialog
                           onConfirm={() => subs.deleteSubtask(sub.id)}
@@ -440,6 +455,11 @@ export function TaskDetailView({
                                 ) : null}
                               </div>
                               <span className="flex-1">{s.title}</span>
+                              {s.estimation != null ? (
+                                <span className="font-mono text-[10px] text-muted-foreground/70">
+                                  {s.estimation}h
+                                </span>
+                              ) : null}
                               {s.priority ? (
                                 <span className="font-mono text-[10px] text-muted-foreground/70">
                                   {s.priority}
@@ -591,6 +611,11 @@ export function TaskDetailView({
           </ConfirmDialog>
         </div>
       </div>
+
+      <SubtaskDialog
+        subtask={viewingSubtask}
+        onClose={() => setViewingSubtask(null)}
+      />
     </div>
   );
 }

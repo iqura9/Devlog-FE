@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { PriorityBadge, StatusBadge } from "@/components/badges";
+import { SubtaskDialog } from "@/components/SubtaskDialog";
 import { ageLabel, ageInDays, formatHours } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { Priority, TaskWithSubtasks } from "@/lib/types";
+import type { Priority, Task, TaskWithSubtasks } from "@/lib/types";
 import { Links, resolvePath } from "@/routes/paths";
 
 const ACCENT_BAR: Record<Priority, string> = {
@@ -23,6 +24,7 @@ interface TaskCardProps {
 export function TaskCard({ task, staleThreshold }: TaskCardProps) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
+  const [viewingSubtask, setViewingSubtask] = useState<Task | null>(null);
 
   const doneCount = task.subtasks.filter((s) => s.status === "done").length;
   const isStale =
@@ -154,7 +156,12 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
               return (
                 <li
                   key={sub.id}
-                  className="flex items-center gap-2.5 rounded-lg border border-border bg-background py-2 pl-3 pr-3"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setViewingSubtask(sub);
+                  }}
+                  className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border bg-background py-2 pl-3 pr-3 transition-colors hover:border-primary/40"
+                  title="View description"
                 >
                   <span className={"flex-1 text-[13px]"}>{sub.title}</span>
 
@@ -171,6 +178,11 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
           </ul>
         </div>
       ) : null}
+
+      <SubtaskDialog
+        subtask={viewingSubtask}
+        onClose={() => setViewingSubtask(null)}
+      />
     </article>
   );
 }
