@@ -14,6 +14,7 @@ export interface Task {
   description: string;
   status: Status;
   priority: Priority;
+  estimation: number | null; // hours
   createdAt: string; // ISO-8601
   updatedAt: string; // ISO-8601
 }

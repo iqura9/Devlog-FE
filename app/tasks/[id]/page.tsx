@@ -16,7 +16,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { api, AgentUnavailableError } from "@/lib/api";
-import type { Priority, Status, Task, TaskWithSubtasks, DecomposeSubtask } from "@/lib/types";
+import type { Priority, Status, Task, DecomposeSubtask } from "@/lib/types";
 import { STATUSES, PRIORITIES } from "@/lib/types";
 import { STATUS_LABELS, PRIORITY_LABELS, ageLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,10 @@ export default function TaskDetailPage() {
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const subtaskInputRef = useRef<HTMLInputElement>(null);
+
+  // Subtask inline title editing
+  const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null);
+  const [editingSubtaskTitle, setEditingSubtaskTitle] = useState("");
 
   // Inline decompose
   const [dPhase, setDPhase] = useState<DecomposePhase>("idle");
@@ -177,14 +181,6 @@ export default function TaskDetailPage() {
 
   // ── subtask mutations ───────────────────────────────────────────────────────
 
-  async function toggleSubtask(sub: Task) {
-    const done = sub.status !== "done";
-    try {
-      const updated = await api.setSubtaskStatus(sub.id, done);
-      setSubtasks((prev) => prev.map((s) => s.id === sub.id ? updated : s));
-    } catch (e) { toast.error((e as Error).message); }
-  }
-
   async function changeSubtaskStatus(subId: number, status: Status) {
     try {
       const updated = await api.updateTask(subId, { status });
@@ -192,9 +188,21 @@ export default function TaskDetailPage() {
     } catch (e) { toast.error((e as Error).message); }
   }
 
-  async function changeSubtaskPriority(subId: number, priority: Priority) {
+  async function saveSubtaskTitle(sub: Task) {
+    const trimmed = editingSubtaskTitle.trim();
+    setEditingSubtaskId(null);
+    if (!trimmed || trimmed === sub.title) return;
     try {
-      const updated = await api.updateTask(subId, { priority });
+      const updated = await api.updateTask(sub.id, { title: trimmed });
+      setSubtasks((prev) => prev.map((s) => s.id === sub.id ? updated : s));
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
+  async function changeSubtaskEstimation(subId: number, value: string) {
+    const hours = value === "" ? null : parseFloat(value);
+    if (hours !== null && (isNaN(hours) || hours <= 0)) return;
+    try {
+      const updated = await api.updateTask(subId, { estimation: hours });
       setSubtasks((prev) => prev.map((s) => s.id === subId ? updated : s));
     } catch (e) { toast.error((e as Error).message); }
   }
@@ -415,22 +423,59 @@ export default function TaskDetailPage() {
                 <ul className="mb-3 flex flex-col gap-2">
                   {subtasks.map((sub) => {
                     const done = sub.status === "done";
+                    const isEditingTitle = editingSubtaskId === sub.id;
                     return (
                       <li
                         key={sub.id}
                         className={cn(
-                          "group flex items-center gap-2.5 rounded-lg border border-border bg-background py-2.5 pl-3 pr-2.5",
+                          "group flex items-center gap-2.5 rounded-lg border border-border bg-background py-2 pl-3 pr-2.5",
                           "border-l-[3px]",
                           PRIORITY_BORDER[sub.priority]
                         )}
                       >
-                        {/* Title */}
-                        <span className={cn(
-                          "flex-1 text-[13px]",
-                          done && "text-muted-foreground/60 line-through"
-                        )}>
-                          {sub.title}
-                        </span>
+                        {/* Title — double-click to edit */}
+                        {isEditingTitle ? (
+                          <input
+                            autoFocus
+                            className="flex-1 rounded border border-primary/40 bg-primary/5 px-1.5 py-0.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            value={editingSubtaskTitle}
+                            onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                            onBlur={() => saveSubtaskTitle(sub)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveSubtaskTitle(sub);
+                              if (e.key === "Escape") setEditingSubtaskId(null);
+                            }}
+                          />
+                        ) : (
+                          <span
+                            className={cn(
+                              "flex-1 cursor-default select-none text-[13px]",
+                              done && "text-muted-foreground/60 line-through"
+                            )}
+                            onDoubleClick={() => {
+                              setEditingSubtaskId(sub.id);
+                              setEditingSubtaskTitle(sub.title);
+                            }}
+                            title="Double-click to edit"
+                          >
+                            {sub.title}
+                          </span>
+                        )}
+
+                        {/* Estimation — hours input */}
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0.5"
+                            step="0.5"
+                            className="w-14 rounded border border-border/60 bg-transparent px-1.5 py-0.5 text-center font-mono text-[11px] text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
+                            value={sub.estimation ?? ""}
+                            placeholder="—"
+                            onChange={(e) => changeSubtaskEstimation(sub.id, e.target.value)}
+                            title="Estimated hours"
+                          />
+                          <span className="text-[10px] text-muted-foreground/50">h</span>
+                        </div>
 
                         {/* Colored status select */}
                         <Select

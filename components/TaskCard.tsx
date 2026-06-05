@@ -32,6 +32,11 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
   const doneCount = task.subtasks.filter((s) => s.status === "done").length;
   const isStale = task.status !== "done" && ageInDays(task.updatedAt) >= staleThreshold;
 
+  const estimationHours = task.subtasks.length > 0
+    ? task.subtasks.reduce((sum, s) => sum + (s.estimation ?? 0), 0)
+    : (task.estimation ?? 0);
+  const hasEstimation = estimationHours > 0;
+
   function handleCardClick(e: React.MouseEvent) {
     if ((e.target as HTMLElement).closest("button, a, input, select, [role='button']")) return;
     router.push(`/tasks/${task.id}`);
@@ -59,6 +64,12 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <StatusBadge status={task.status} />
         <PriorityBadge priority={task.priority} />
+        {hasEstimation && (
+          <span className="inline-flex items-center gap-0.5 rounded-full border border-border bg-muted/50 px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+            <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {estimationHours % 1 === 0 ? estimationHours : estimationHours.toFixed(1)}h
+          </span>
+        )}
         <span className="font-mono text-xs text-muted-foreground">{ageLabel(task.createdAt)}</span>
         {isStale && (
           <span className="font-mono text-xs font-semibold text-priority-high">· stale</span>
@@ -140,6 +151,11 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
                     {sub.title}
                   </span>
 
+                  {sub.estimation != null && (
+                    <span className="font-mono text-[11px] text-muted-foreground/60">
+                      {sub.estimation % 1 === 0 ? sub.estimation : sub.estimation.toFixed(1)}h
+                    </span>
+                  )}
                   <StatusBadge status={sub.status} />
                 </li>
               );
