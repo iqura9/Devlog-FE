@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { useTaskEditor } from "@/hooks/useTaskEditor";
 import { useSubtasks } from "@/hooks/useSubtasks";
 import { useDecompose } from "@/hooks/useDecompose";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { Header } from "./Header";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -105,14 +106,9 @@ export function TaskDetailView({
   }
 
   async function deleteTask() {
-    if (!confirm(`Delete "${task.title}"? This can't be undone.`)) return;
-    try {
-      await api.deleteTask(task.id);
-      toast.success("Task deleted");
-      router.push(Links.tasks.index);
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
+    await api.deleteTask(task.id);
+    toast.success("Task deleted");
+    router.push(Links.tasks.index);
   }
 
   const doneCount = subs.subtasks.filter((s) => s.status === "done").length;
@@ -167,7 +163,7 @@ export function TaskDetailView({
               </p>
               <Textarea
                 className={cn(
-                  "min-h-[100px] resize-none bg-transparent shadow-none transition-all duration-150",
+                  "min-h-25 resize-none bg-transparent shadow-none transition-all duration-150",
                   "border-border/40 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/10",
                   editor.editingField === "desc" &&
                     "border-primary/30 bg-primary/5",
@@ -318,13 +314,19 @@ export function TaskDetailView({
                         </Select>
 
                         {/* Delete subtask */}
-                        <button
-                          onClick={() => subs.deleteSubtask(sub.id)}
-                          className="ml-1 grid h-6 w-6 shrink-0 place-items-center rounded-md text-muted-foreground/40 opacity-0 transition-all group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-                          aria-label="Delete subtask"
+                        <ConfirmDialog
+                          onConfirm={() => subs.deleteSubtask(sub.id)}
+                          title="Delete subtask?"
+                          description={`"${sub.title}" will be permanently deleted.`}
+                          confirmLabel="Delete"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                          <button
+                            className="ml-1 grid h-6 w-6 shrink-0 place-items-center rounded-md text-muted-foreground/40 opacity-0 transition-all group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                            aria-label="Delete subtask"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </ConfirmDialog>
                       </li>
                     );
                   })}
@@ -592,7 +594,7 @@ export function TaskDetailView({
                   value={task.status}
                   onValueChange={(v) => editor.changeStatus(v as Status)}
                 >
-                  <SelectTrigger className="h-7 w-[130px] text-[12px]">
+                  <SelectTrigger className="h-7 w-32.5 text-[12px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -613,7 +615,7 @@ export function TaskDetailView({
                   value={task.priority}
                   onValueChange={(v) => editor.changePriority(v as Priority)}
                 >
-                  <SelectTrigger className="h-7 w-[130px] text-[12px]">
+                  <SelectTrigger className="h-7 w-32.5 text-[12px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -637,13 +639,17 @@ export function TaskDetailView({
             </div>
           </div>
 
-          <button
-            onClick={deleteTask}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          <ConfirmDialog
+            onConfirm={deleteTask}
+            title="Delete task?"
+            description={`"${task.title}" will be permanently deleted. This can't be undone.`}
+            confirmLabel="Delete task"
           >
-            <Trash2 className="h-3.5 w-3.5" />
-            Delete task
-          </button>
+            <button className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive">
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete task
+            </button>
+          </ConfirmDialog>
         </div>
       </div>
     </div>

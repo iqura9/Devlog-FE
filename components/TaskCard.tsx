@@ -50,7 +50,7 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
       className={cn(
         "relative overflow-hidden rounded-xl border border-border bg-card p-4 shadow-soft",
         "cursor-pointer transition-all hover:-translate-y-px hover:shadow-card",
-        "before:absolute before:inset-y-0 before:left-0 before:w-[3px]",
+        "before:absolute before:inset-y-0 before:left-0 before:w-0.75",
         ACCENT_BAR[task.priority],
       )}
     >
