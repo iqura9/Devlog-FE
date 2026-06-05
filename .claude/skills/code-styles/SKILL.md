@@ -132,6 +132,30 @@ function UserCard({ user, isAdmin }: CardProps) {
 
 ---
 
+## Routing: Always Use `Links` from `@/routes/paths`
+
+Never hardcode route strings. Always import and use `Links` from `@/routes/paths` for any `href` prop or programmatic navigation.
+
+**Incorrect (hardcoded string):**
+
+```tsx
+<Link href="/tasks">Back</Link>
+router.push("/tasks/123")
+```
+
+**Correct (using Links):**
+
+```tsx
+import { Links } from "@/routes/paths"
+
+<Link href={Links.tasks.index}>Back</Link>
+router.push(Links.tasks.view(id))
+```
+
+**Why:** Hardcoded strings break silently when routes change. `Links` is the single source of truth derived from `Paths` in `routes/paths.ts`.
+
+---
+
 ## Combined Example
 
 Applying all rules together:

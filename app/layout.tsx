@@ -32,9 +32,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
       className={`${plusJakarta.variable} ${jetbrainsMono.variable}`}
     >
       <body className="font-sans antialiased">
-        <div className="mx-auto max-w-screen-2xl px-5 pb-20 sm:px-7">
+        <div className="mx-auto max-w-screen-2xl px-5 pb-20 sm:px-7 min-h-screen flex flex-col">
           {children}
         </div>
+
         <Toaster
           position="bottom-right"
           toastOptions={{
