@@ -30,17 +30,27 @@ if [ -z "$DIFF" ]; then
   exit 1
 fi
 
+# Truncate diff to ~15k chars to stay within token limits
+DIFF_TRUNCATED=$(echo "$DIFF" | head -c 15000)
+if [ ${#DIFF} -gt 15000 ]; then
+  DIFF_TRUNCATED="${DIFF_TRUNCATED}
+... (diff truncated, $(git diff --staged --stat | tail -1))"
+fi
+
 echo ""
 
 # Run claude in background so spinner can animate
-echo "$DIFF" | claude --model claude-haiku-4-5-20251001 -p \
+echo "$DIFF_TRUNCATED" | claude --model claude-haiku-4-5-20251001 -p \
   "Analyze this git diff and output ONLY a conventional commit message in the format: <type>[scope]: <description>. No explanation, just the message." \
   > /tmp/_commit_msg.txt &
 
 spinner $!
-wait $!
-
-SUGGESTED=$(cat /tmp/_commit_msg.txt)
+if ! wait $!; then
+  echo -e "  ${RED}✖${RESET}  Claude failed to generate a message. Type your commit message:\n"
+  SUGGESTED=""
+else
+  SUGGESTED=$(cat /tmp/_commit_msg.txt)
+fi
 rm -f /tmp/_commit_msg.txt
 
 echo -e "  ${GREEN}✔${RESET}  ${BOLD}Suggested commit:${RESET}\n"
