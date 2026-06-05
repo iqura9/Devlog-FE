@@ -1,11 +1,13 @@
 "use client";
 
+import { Controller, type Control, type FieldValues, type Path } from "react-hook-form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 export interface SelectOption {
@@ -15,21 +17,38 @@ export interface SelectOption {
   dotCls?: string;
 }
 
-interface ControlledSelectProps {
-  value: string;
-  onChange: (value: string) => void;
+interface SharedProps {
   options: SelectOption[];
   className?: string;
   variant?: "default" | "pill";
+  label?: string;
 }
 
-export function ControlledSelect({
+interface WithHandlers extends SharedProps {
+  value: string;
+  onChange: (value: string) => void;
+  control?: never;
+  name?: never;
+}
+
+interface WithControl<T extends FieldValues> extends SharedProps {
+  control: Control<T>;
+  name: Path<T>;
+  value?: never;
+  onChange?: never;
+}
+
+type ControlledSelectProps<T extends FieldValues = FieldValues> =
+  | WithHandlers
+  | WithControl<T>;
+
+function SelectCore({
   value,
   onChange,
   options,
   className,
   variant = "default",
-}: ControlledSelectProps) {
+}: Required<Pick<WithHandlers, "value" | "onChange">> & SharedProps) {
   const current = options.find((o) => o.value === value);
   const isPill = variant === "pill";
 
@@ -44,12 +63,7 @@ export function ControlledSelect({
           )}
         >
           {current?.dotCls ? (
-            <span
-              className={cn(
-                "h-1.5 w-1.5 shrink-0 rounded-full",
-                current.dotCls,
-              )}
-            />
+            <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", current.dotCls)} />
           ) : null}
           <span>{current?.label}</span>
         </SelectTrigger>
@@ -70,5 +84,44 @@ export function ControlledSelect({
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+export function ControlledSelect<T extends FieldValues = FieldValues>(
+  props: ControlledSelectProps<T>,
+) {
+  const { label, options, className, variant } = props;
+
+  const select = props.control ? (
+    <Controller
+      control={props.control}
+      name={props.name}
+      render={({ field }) => (
+        <SelectCore
+          value={field.value}
+          onChange={field.onChange}
+          options={options}
+          className={className}
+          variant={variant}
+        />
+      )}
+    />
+  ) : (
+    <SelectCore
+      value={props.value}
+      onChange={props.onChange}
+      options={options}
+      className={className}
+      variant={variant}
+    />
+  );
+
+  if (!label) return select;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      {select}
+    </div>
   );
 }

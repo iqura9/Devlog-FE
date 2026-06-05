@@ -37,7 +37,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         </div>
 
         <Toaster
-          position="bottom-right"
+          position="top-right"
           toastOptions={{
             style: {
               background: "hsl(220 40% 99%)",

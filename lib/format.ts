@@ -34,9 +34,9 @@ export const STATUS_LABELS: Record<Status, string> = {
 };
 
 export const PRIORITY_LABELS: Record<Priority, string> = {
-  low: "low",
-  medium: "medium",
-  high: "high",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
 };
 
 export const TONE_LABELS: Record<Tone, string> = {
@@ -50,7 +50,8 @@ export const STATUS_OPTIONS = STATUSES.map((s) => ({
   label: STATUS_LABELS[s],
   triggerCls: {
     todo: "bg-muted text-muted-foreground/80 border-border/40",
-    "in-progress": "bg-status-progress-soft text-status-progress border-transparent",
+    "in-progress":
+      "bg-status-progress-soft text-status-progress border-transparent",
     done: "bg-status-done-soft text-status-done border-transparent",
   }[s],
   dotCls: {

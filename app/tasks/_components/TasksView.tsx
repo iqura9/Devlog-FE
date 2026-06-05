@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { TaskBoard } from "@/components/TaskBoard";
 import { TaskBoardSkeleton } from "@/components/TaskBoardSkeleton";
-import { TaskDialog } from "@/components/TaskDialog";
+import { TaskDialog } from "@/app/tasks/_components/TaskDialog";
 import { AgentPanel } from "@/components/agents/AgentPanel";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,6 @@ export function TasksView({ tasksPromise }: HomeViewProps) {
       </div>
 
       <TaskDialog
-        task={null}
         open={isCreateDialogOpen}
         onClose={createDialogClose}
         onSaved={refresh}
