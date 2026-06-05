@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, Check } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { PriorityBadge, StatusBadge } from "@/components/badges";
-import { ageLabel, ageInDays } from "@/lib/format";
+import { ageLabel, ageInDays, formatHours } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Priority, TaskWithSubtasks } from "@/lib/types";
 import { Links, resolvePath } from "@/routes/paths";
@@ -82,22 +82,10 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            {estimationHours % 1 === 0
-              ? estimationHours
-              : estimationHours.toFixed(1)}
-            h
-          </span>
-        ) : null}
-        <span className="font-mono text-xs text-muted-foreground">
-          {ageLabel(task.createdAt)}
-        </span>
-        {isStale ? (
-          <span className="font-mono text-xs font-semibold text-priority-high">
-            · stale
+            {formatHours(estimationHours)}h
           </span>
         ) : null}
 
-        {/* Subtask expand toggle */}
         {task.subtasks.length > 0 ? (
           <button
             onClick={(e) => {
@@ -124,10 +112,19 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
             ) : null}
           </button>
         ) : null}
+
+        <span className="font-mono text-xs text-muted-foreground">
+          {ageLabel(task.createdAt)}
+        </span>
+        {isStale ? (
+          <span className="font-mono text-xs font-semibold text-priority-high">
+            · stale
+          </span>
+        ) : null}
       </div>
 
       {/* Expanded subtask list */}
-      {(expanded && task.subtasks.length > 0) ? (
+      {expanded && task.subtasks.length > 0 ? (
         <div className="mt-3.5 border-t border-dashed border-border pt-3.5">
           {/* Progress bar */}
           <div className="mb-2.5 flex items-center gap-2.5">
@@ -148,41 +145,19 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
 
           <ul className="flex flex-col gap-1.5">
             {task.subtasks.map((sub) => {
-              const done = sub.status === "done";
               return (
                 <li
                   key={sub.id}
                   className="flex items-center gap-2.5 rounded-lg border border-border bg-background py-2 pl-3 pr-3"
                 >
-                  {/* Visual done indicator — not interactive (go to detail to toggle) */}
-                  <div
-                    className={cn(
-                      "grid h-4 w-4 shrink-0 place-items-center rounded-[5px] border-[1.5px]",
-                      done
-                        ? "border-status-done bg-status-done text-white"
-                        : "border-border",
-                    )}
-                  >
-                    {done ? <Check className="h-2.5 w-2.5" strokeWidth={4} /> : null}
-                  </div>
-
-                  <span
-                    className={cn(
-                      "flex-1 text-[13px]",
-                      done && "text-muted-foreground/60 line-through",
-                    )}
-                  >
-                    {sub.title}
-                  </span>
+                  <span className={"flex-1 text-[13px]"}>{sub.title}</span>
 
                   {sub.estimation != null ? (
-                    <span className="font-mono text-[11px] text-muted-foreground/60">
-                      {sub.estimation % 1 === 0
-                        ? sub.estimation
-                        : sub.estimation.toFixed(1)}
-                      h
+                    <span className="font-mono text-[11px] text-muted-foreground/60 rounded-md px-3 py-0.5 bg-muted border border-border">
+                      {formatHours(sub.estimation)}h
                     </span>
                   ) : null}
+
                   <StatusBadge status={sub.status} />
                 </li>
               );

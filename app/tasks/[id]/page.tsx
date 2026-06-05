@@ -10,7 +10,7 @@ interface PageProps {
 export default async function Page({ params }: PageProps) {
   const { id } = await params;
   const taskId = Number(id);
-  if (isNaN(taskId)) notFound();
+  if (Number.isNaN(taskId)) notFound();
 
   let task: Task | undefined;
   let subtasks: Task[] = [];

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Links, resolvePath } from "@/routes/paths";
+import { Links } from "@/routes/paths";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -16,8 +16,8 @@ import {
   AlertCircle,
   RotateCcw,
 } from "lucide-react";
-import { api, AgentUnavailableError } from "@/lib/api";
-import type { Priority, Status, Task, DecomposeSubtask } from "@/lib/types";
+import { api } from "@/lib/api";
+import type { Priority, Status, Task } from "@/lib/types";
 import { STATUSES, PRIORITIES } from "@/lib/types";
 import { STATUS_LABELS, PRIORITY_LABELS, ageLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,9 @@ import {
 } from "@/components/ui/select";
 import { AgentTrace } from "@/components/agents/AgentTrace";
 import { cn } from "@/lib/utils";
-import type { DecomposeOutput } from "@/lib/types";
+import { useTaskEditor } from "@/hooks/useTaskEditor";
+import { useSubtasks } from "@/hooks/useSubtasks";
+import { useDecompose } from "@/hooks/useDecompose";
 import { Header } from "./Header";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -55,17 +57,6 @@ const STATUS_DOT_CLS: Record<Status, string> = {
   done: "bg-status-done",
 };
 
-function extractJson(raw: string): string {
-  const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fence) return fence[1].trim();
-  const braceStart = raw.indexOf("{");
-  return braceStart >= 0 ? raw.slice(braceStart) : raw.trim();
-}
-
-// ── types ─────────────────────────────────────────────────────────────────────
-
-type DecomposePhase = "idle" | "loading" | "clarify" | "suggest" | "applying";
-
 // ── component ─────────────────────────────────────────────────────────────────
 
 interface TaskDetailViewProps {
@@ -79,100 +70,42 @@ export function TaskDetailView({
 }: TaskDetailViewProps) {
   const router = useRouter();
 
-  const [task, setTask] = useState<Task | null>(initialTask);
-  const [subtasks, setSubtasks] = useState<Task[]>(initialSubtasks);
+  const editor = useTaskEditor(initialTask);
+  const { task } = editor;
+  const subs = useSubtasks(initialTask.id, initialSubtasks);
+  const decompose = useDecompose(task, subs.appendMany);
 
-  // Local edit state
-  const [title, setTitle] = useState(initialTask.title);
-  const [description, setDescription] = useState(initialTask.description);
-  const [editingField, setEditingField] = useState<"title" | "desc" | null>(
-    null,
-  );
-
-  // Debounce refs
-  const titleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
-  const descTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
-
-  // Inline add-subtask
+  // Inline add-subtask (UI-local)
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const subtaskInputRef = useRef<HTMLInputElement>(null);
 
-  // Subtask inline title editing
+  // Subtask inline title editing (UI-local)
   const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null);
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState("");
-
-  // Inline decompose
-  const [dPhase, setDPhase] = useState<DecomposePhase>("idle");
-  const [dQuestion, setDQuestion] = useState("");
-  const [dAnswer, setDAnswer] = useState("");
-  const [dSuggestions, setDSuggestions] = useState<DecomposeSubtask[]>([]);
-  const [dSelected, setDSelected] = useState<Set<number>>(new Set());
-  const [dRefinement, setDRefinement] = useState("");
-  const [dError, setDError] = useState("");
-
-  // ── data ────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (addingSubtask) subtaskInputRef.current?.focus();
   }, [addingSubtask]);
 
-  // ── field save ──────────────────────────────────────────────────────────────
-
-  async function saveField(field: "title" | "description", value: string) {
-    if (!task) return;
-    const trimmed = field === "title" ? value.trim() : value;
-    if (field === "title" && !trimmed) return;
-    if (field === "title" && trimmed === task.title) return;
-    if (field === "description" && value === task.description) return;
-    try {
-      const updated = await api.updateTask(task.id, { [field]: trimmed });
-      setTask(updated);
-    } catch (e) {
-      toast.error((e as Error).message);
-      if (field === "title") setTitle(task.title);
+  async function handleAddSubtask() {
+    const trimmed = newSubtaskTitle.trim();
+    if (!trimmed) return;
+    if (await subs.addSubtask(trimmed)) {
+      setNewSubtaskTitle("");
+      setAddingSubtask(false);
     }
   }
 
-  function handleTitleChange(v: string) {
-    setTitle(v);
-    clearTimeout(titleTimer.current);
-    titleTimer.current = setTimeout(() => saveField("title", v), 500);
-  }
-
-  function handleDescChange(v: string) {
-    setDescription(v);
-    clearTimeout(descTimer.current);
-    descTimer.current = setTimeout(() => saveField("description", v), 800);
-  }
-
-  // ── task mutations ──────────────────────────────────────────────────────────
-
-  async function changeStatus(status: Status) {
-    if (!task) return;
-    try {
-      setTask(await api.updateTask(task.id, { status }));
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  }
-
-  async function changePriority(priority: Priority) {
-    if (!task) return;
-    try {
-      setTask(await api.updateTask(task.id, { priority }));
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
+  async function saveSubtaskTitle(sub: Task) {
+    const trimmed = editingSubtaskTitle.trim();
+    setEditingSubtaskId(null);
+    if (!trimmed || trimmed === sub.title) return;
+    await subs.saveTitle(sub.id, trimmed);
   }
 
   async function deleteTask() {
-    if (!task || !confirm(`Delete "${task.title}"? This can't be undone.`))
-      return;
+    if (!confirm(`Delete "${task.title}"? This can't be undone.`)) return;
     try {
       await api.deleteTask(task.id);
       toast.success("Task deleted");
@@ -182,138 +115,7 @@ export function TaskDetailView({
     }
   }
 
-  // ── subtask mutations ───────────────────────────────────────────────────────
-
-  async function changeSubtaskStatus(subId: number, status: Status) {
-    try {
-      const updated = await api.updateTask(subId, { status });
-      setSubtasks((prev) => prev.map((s) => (s.id === subId ? updated : s)));
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  }
-
-  async function saveSubtaskTitle(sub: Task) {
-    const trimmed = editingSubtaskTitle.trim();
-    setEditingSubtaskId(null);
-    if (!trimmed || trimmed === sub.title) return;
-    try {
-      const updated = await api.updateTask(sub.id, { title: trimmed });
-      setSubtasks((prev) => prev.map((s) => (s.id === sub.id ? updated : s)));
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  }
-
-  async function changeSubtaskEstimation(subId: number, value: string) {
-    const hours = value === "" ? null : parseFloat(value);
-    if (hours !== null && (isNaN(hours) || hours <= 0)) return;
-    try {
-      const updated = await api.updateTask(subId, { estimation: hours });
-      setSubtasks((prev) => prev.map((s) => (s.id === subId ? updated : s)));
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  }
-
-  async function deleteSubtask(subId: number) {
-    try {
-      await api.deleteTask(subId);
-      setSubtasks((prev) => prev.filter((s) => s.id !== subId));
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  }
-
-  async function addSubtask() {
-    if (!task || !newSubtaskTitle.trim()) return;
-    try {
-      const sub = await api.createSubtask(task.id, {
-        title: newSubtaskTitle.trim(),
-      });
-      setSubtasks((prev) => [...prev, sub]);
-      setNewSubtaskTitle("");
-      setAddingSubtask(false);
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  }
-
-  // ── inline decompose ────────────────────────────────────────────────────────
-
-  async function runDecompose(clarification?: string) {
-    if (!task) return;
-    setDPhase("loading");
-    setDError("");
-    try {
-      const res = await api.decompose({
-        taskId: task.id,
-        ...(clarification ? { clarification } : {}),
-      });
-      let parsed: DecomposeOutput;
-      try {
-        parsed = JSON.parse(extractJson(res.output)) as DecomposeOutput;
-      } catch {
-        parsed = { status: "decomposed", subtasks: [{ title: res.output }] };
-      }
-      if (parsed.status === "needs_clarification") {
-        setDQuestion(parsed.question);
-        setDAnswer("");
-        setDPhase("clarify");
-      } else {
-        const subs = parsed.subtasks ?? [];
-        setDSuggestions(subs);
-        setDSelected(new Set(subs.map((_, i) => i)));
-        setDRefinement("");
-        setDPhase("suggest");
-      }
-    } catch (e) {
-      if (e instanceof AgentUnavailableError) {
-        setDError("AI agents require a GEMINI_API_KEY in Backend/.env");
-      } else {
-        setDError((e as Error).message);
-      }
-      setDPhase("idle");
-    }
-  }
-
-  async function applyDecompose() {
-    if (!task) return;
-    const toCreate = dSuggestions.filter((_, i) => dSelected.has(i));
-    if (!toCreate.length) {
-      toast.error("Select at least one subtask");
-      return;
-    }
-    setDPhase("applying");
-    try {
-      const created = await Promise.all(
-        toCreate.map((s) =>
-          api.createSubtask(task.id, { title: s.title, priority: s.priority }),
-        ),
-      );
-      setSubtasks((prev) => [...prev, ...created]);
-      toast.success(
-        `Added ${created.length} subtask${created.length !== 1 ? "s" : ""}`,
-      );
-      setDPhase("idle");
-    } catch (e) {
-      toast.error((e as Error).message);
-      setDPhase("suggest");
-    }
-  }
-
-  function toggleSuggestion(i: number) {
-    setDSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else next.add(i);
-      return next;
-    });
-  }
-
-  if (!task) return null;
-
-  const doneCount = subtasks.filter((s) => s.status === "done").length;
+  const doneCount = subs.subtasks.filter((s) => s.status === "done").length;
   const isRoot = task.parentId === null;
 
   return (
@@ -345,15 +147,13 @@ export function TaskDetailView({
                 "rounded-lg border border-transparent px-2 py-1 -ml-2 -mt-1",
                 "placeholder:text-muted-foreground/40 transition-all duration-150",
                 "focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10",
-                editingField === "title" && "border-primary/30 bg-primary/5",
+                editor.editingField === "title" &&
+                  "border-primary/30 bg-primary/5",
               )}
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              onFocus={() => setEditingField("title")}
-              onBlur={() => {
-                setEditingField(null);
-                saveField("title", title);
-              }}
+              value={editor.title}
+              onChange={(e) => editor.handleTitleChange(e.target.value)}
+              onFocus={() => editor.setEditingField("title")}
+              onBlur={editor.handleTitleBlur}
               onKeyDown={(e) => {
                 if (e.key === "Enter") (e.target as HTMLInputElement).blur();
               }}
@@ -369,18 +169,16 @@ export function TaskDetailView({
                 className={cn(
                   "min-h-[100px] resize-none bg-transparent shadow-none transition-all duration-150",
                   "border-border/40 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/10",
-                  editingField === "desc" && "border-primary/30 bg-primary/5",
+                  editor.editingField === "desc" &&
+                    "border-primary/30 bg-primary/5",
                 )}
-                value={description}
-                onChange={(e) => handleDescChange(e.target.value)}
-                onFocus={() => setEditingField("desc")}
-                onBlur={() => {
-                  setEditingField(null);
-                  saveField("description", description);
-                }}
+                value={editor.description}
+                onChange={(e) => editor.handleDescChange(e.target.value)}
+                onFocus={() => editor.setEditingField("desc")}
+                onBlur={editor.handleDescBlur}
                 placeholder="Add context, links, acceptance criteria…"
               />
-              {editingField === "desc" ? (
+              {editor.editingField === "desc" ? (
                 <p className="mt-1 text-right font-mono text-[10px] text-muted-foreground/50">
                   Auto-saves on pause
                 </p>
@@ -396,27 +194,27 @@ export function TaskDetailView({
                 <div className="flex items-center gap-3">
                   <span className="text-[14px] font-bold">Subtasks</span>
                   <span className="font-mono text-[12px] text-muted-foreground">
-                    {doneCount}/{subtasks.length}
+                    {doneCount}/{subs.subtasks.length}
                   </span>
-                  {subtasks.length > 0 ? (
+                  {subs.subtasks.length > 0 ? (
                     <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
                       <div
                         className="h-full rounded-full bg-status-done transition-all duration-300"
                         style={{
                           width: `${Math.round(
-                            (doneCount / subtasks.length) * 100,
+                            (doneCount / subs.subtasks.length) * 100,
                           )}%`,
                         }}
                       />
                     </div>
                   ) : null}
                 </div>
-                {dPhase === "idle" ? (
+                {decompose.phase === "idle" ? (
                   <Button
                     size="sm"
                     variant="outline"
                     className="h-7 gap-1.5 border-primary/40 px-3 text-[11.5px] text-primary hover:border-primary hover:bg-primary/5"
-                    onClick={() => runDecompose()}
+                    onClick={() => decompose.run()}
                   >
                     <Sparkles className="h-3.5 w-3.5" />
                     Decompose
@@ -425,19 +223,16 @@ export function TaskDetailView({
               </div>
 
               {/* Subtask cards */}
-              {subtasks.length > 0 ? (
+              {subs.subtasks.length > 0 ? (
                 <ul className="mb-3 flex flex-col gap-2">
-                  {subtasks.map((sub) => {
-                    const done = sub.status === "done";
+                  {subs.subtasks.map((sub) => {
                     const isEditingTitle = editingSubtaskId === sub.id;
                     return (
                       <li
                         key={sub.id}
-                        className={cn(
-                          "group flex items-center gap-2.5 rounded-lg border border-border bg-background py-2 pl-3 pr-2.5",
-                          "border-l-[3px]",
-                          PRIORITY_BORDER[sub.priority],
-                        )}
+                        className={
+                          "group flex items-center gap-2.5 rounded-lg border border-border bg-background py-2 pl-3 pr-2.5"
+                        }
                       >
                         {/* Title — double-click to edit */}
                         {isEditingTitle ? (
@@ -458,7 +253,6 @@ export function TaskDetailView({
                           <span
                             className={cn(
                               "flex-1 cursor-default select-none text-[13px]",
-                              done && "text-muted-foreground/60 line-through",
                             )}
                             onDoubleClick={() => {
                               setEditingSubtaskId(sub.id);
@@ -480,7 +274,7 @@ export function TaskDetailView({
                             value={sub.estimation ?? ""}
                             placeholder="—"
                             onChange={(e) =>
-                              changeSubtaskEstimation(sub.id, e.target.value)
+                              subs.changeEstimation(sub.id, e.target.value)
                             }
                             title="Estimated hours"
                           />
@@ -493,7 +287,7 @@ export function TaskDetailView({
                         <Select
                           value={sub.status}
                           onValueChange={(v) =>
-                            changeSubtaskStatus(sub.id, v as Status)
+                            subs.changeStatus(sub.id, v as Status)
                           }
                         >
                           <SelectTrigger
@@ -525,7 +319,7 @@ export function TaskDetailView({
 
                         {/* Delete subtask */}
                         <button
-                          onClick={() => deleteSubtask(sub.id)}
+                          onClick={() => subs.deleteSubtask(sub.id)}
                           className="ml-1 grid h-6 w-6 shrink-0 place-items-center rounded-md text-muted-foreground/40 opacity-0 transition-all group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
                           aria-label="Delete subtask"
                         >
@@ -547,7 +341,7 @@ export function TaskDetailView({
                     onChange={(e) => setNewSubtaskTitle(e.target.value)}
                     placeholder="Subtask title…"
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") addSubtask();
+                      if (e.key === "Enter") handleAddSubtask();
                       if (e.key === "Escape") {
                         setAddingSubtask(false);
                         setNewSubtaskTitle("");
@@ -556,7 +350,7 @@ export function TaskDetailView({
                   />
                   <Button
                     size="sm"
-                    onClick={addSubtask}
+                    onClick={handleAddSubtask}
                     disabled={!newSubtaskTitle.trim()}
                   >
                     Add
@@ -582,7 +376,7 @@ export function TaskDetailView({
               )}
 
               {/* ── inline decompose section ── */}
-              {dPhase !== "idle" ? (
+              {decompose.phase !== "idle" ? (
                 <div
                   className="mt-4 rounded-xl p-[1.5px]"
                   style={{
@@ -592,7 +386,7 @@ export function TaskDetailView({
                 >
                   <div className="rounded-[calc(0.7rem-1.5px)] bg-card p-4">
                     {/* Loading */}
-                    {dPhase === "loading" ? (
+                    {decompose.phase === "loading" ? (
                       <div>
                         <AgentTrace
                           steps={["Assess clarity", "Generate", "Review"]}
@@ -605,7 +399,7 @@ export function TaskDetailView({
                     ) : null}
 
                     {/* Clarify */}
-                    {dPhase === "clarify" ? (
+                    {decompose.phase === "clarify" ? (
                       <div className="flex flex-col gap-3">
                         <div className="flex items-start gap-2">
                           <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -613,16 +407,19 @@ export function TaskDetailView({
                             <p className="text-[13px] font-semibold text-primary">
                               Agent needs a bit more context
                             </p>
-                            <p className="mt-0.5 text-[13.5px]">{dQuestion}</p>
+                            <p className="mt-0.5 text-[13.5px]">
+                              {decompose.question}
+                            </p>
                           </div>
                         </div>
                         <input
                           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
-                          value={dAnswer}
-                          onChange={(e) => setDAnswer(e.target.value)}
+                          value={decompose.answer}
+                          onChange={(e) => decompose.setAnswer(e.target.value)}
                           placeholder="Your answer (optional)…"
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") runDecompose(dAnswer);
+                            if (e.key === "Enter")
+                              decompose.run(decompose.answer);
                           }}
                           autoFocus
                         />
@@ -630,13 +427,13 @@ export function TaskDetailView({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setDPhase("idle")}
+                            onClick={decompose.reset}
                           >
                             Cancel
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => runDecompose(dAnswer)}
+                            onClick={() => decompose.run(decompose.answer)}
                           >
                             <Wand2 className="h-3.5 w-3.5" />
                             Generate subtasks
@@ -646,7 +443,8 @@ export function TaskDetailView({
                     ) : null}
 
                     {/* Suggestions */}
-                    {dPhase === "suggest" || dPhase === "applying" ? (
+                    {decompose.phase === "suggest" ||
+                    decompose.phase === "applying" ? (
                       <div className="flex flex-col gap-3">
                         <div className="flex items-center gap-1.5">
                           <Sparkles className="h-3.5 w-3.5 text-primary" />
@@ -656,26 +454,26 @@ export function TaskDetailView({
                         </div>
 
                         <ul className="flex flex-col gap-1.5">
-                          {dSuggestions.map((s, i) => (
+                          {decompose.suggestions.map((s, i) => (
                             <li
                               key={i}
                               className={cn(
                                 "flex items-center gap-2.5 rounded-lg border px-3 py-2 text-[13px] transition-colors cursor-pointer",
-                                dSelected.has(i)
+                                decompose.selected.has(i)
                                   ? "border-primary/30 bg-primary/5"
                                   : "border-dashed border-border text-muted-foreground",
                               )}
-                              onClick={() => toggleSuggestion(i)}
+                              onClick={() => decompose.toggle(i)}
                             >
                               <div
                                 className={cn(
                                   "grid h-4 w-4 shrink-0 place-items-center rounded-[5px] border-[1.5px]",
-                                  dSelected.has(i)
+                                  decompose.selected.has(i)
                                     ? "border-primary bg-primary text-primary-foreground"
                                     : "border-border",
                                 )}
                               >
-                                {dSelected.has(i) ? (
+                                {decompose.selected.has(i) ? (
                                   <Check
                                     className="h-2.5 w-2.5"
                                     strokeWidth={4}
@@ -691,17 +489,7 @@ export function TaskDetailView({
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setDSuggestions((prev) =>
-                                    prev.filter((_, j) => j !== i),
-                                  );
-                                  setDSelected((prev) => {
-                                    const next = new Set<number>();
-                                    prev.forEach((v) => {
-                                      if (v < i) next.add(v);
-                                      else if (v > i) next.add(v - 1);
-                                    });
-                                    return next;
-                                  });
+                                  decompose.removeSuggestion(i);
                                 }}
                                 className="ml-1 grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground/40 hover:bg-muted hover:text-muted-foreground"
                               >
@@ -714,12 +502,17 @@ export function TaskDetailView({
                         {/* Refine input */}
                         <input
                           className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-[13px] text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                          value={dRefinement}
-                          onChange={(e) => setDRefinement(e.target.value)}
+                          value={decompose.refinement}
+                          onChange={(e) =>
+                            decompose.setRefinement(e.target.value)
+                          }
                           placeholder="Ask AI to refine suggestions…"
                           onKeyDown={(e) => {
-                            if (e.key === "Enter" && dRefinement.trim())
-                              runDecompose(dRefinement);
+                            if (
+                              e.key === "Enter" &&
+                              decompose.refinement.trim()
+                            )
+                              decompose.run(decompose.refinement);
                           }}
                         />
 
@@ -728,8 +521,8 @@ export function TaskDetailView({
                             variant="ghost"
                             size="sm"
                             className="gap-1.5"
-                            onClick={() => runDecompose()}
-                            disabled={dPhase === "applying"}
+                            onClick={() => decompose.run()}
+                            disabled={decompose.phase === "applying"}
                           >
                             <RotateCcw className="h-3 w-3" />
                             Regenerate
@@ -738,21 +531,22 @@ export function TaskDetailView({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setDPhase("idle")}
-                              disabled={dPhase === "applying"}
+                              onClick={decompose.reset}
+                              disabled={decompose.phase === "applying"}
                             >
                               Discard
                             </Button>
                             <Button
                               size="sm"
-                              onClick={applyDecompose}
+                              onClick={decompose.apply}
                               disabled={
-                                dSelected.size === 0 || dPhase === "applying"
+                                decompose.selected.size === 0 ||
+                                decompose.phase === "applying"
                               }
                             >
-                              {dPhase === "applying"
+                              {decompose.phase === "applying"
                                 ? "Adding…"
-                                : `Add ${dSelected.size}`}
+                                : `Add ${decompose.selected.size}`}
                             </Button>
                           </div>
                         </div>
@@ -760,15 +554,17 @@ export function TaskDetailView({
                     ) : null}
 
                     {/* Error fallback */}
-                    {dError ? (
+                    {decompose.error ? (
                       <div className="flex items-center gap-2 rounded-lg bg-muted/60 p-3 text-[13px]">
                         <AlertCircle className="h-4 w-4 shrink-0 text-muted-foreground/60" />
-                        <span className="text-muted-foreground">{dError}</span>
+                        <span className="text-muted-foreground">
+                          {decompose.error}
+                        </span>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="ml-auto"
-                          onClick={() => setDPhase("idle")}
+                          onClick={decompose.reset}
                         >
                           Dismiss
                         </Button>
@@ -794,7 +590,7 @@ export function TaskDetailView({
                 </span>
                 <Select
                   value={task.status}
-                  onValueChange={(v) => changeStatus(v as Status)}
+                  onValueChange={(v) => editor.changeStatus(v as Status)}
                 >
                   <SelectTrigger className="h-7 w-[130px] text-[12px]">
                     <SelectValue />
@@ -815,7 +611,7 @@ export function TaskDetailView({
                 </span>
                 <Select
                   value={task.priority}
-                  onValueChange={(v) => changePriority(v as Priority)}
+                  onValueChange={(v) => editor.changePriority(v as Priority)}
                 >
                   <SelectTrigger className="h-7 w-[130px] text-[12px]">
                     <SelectValue />

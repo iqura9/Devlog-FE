@@ -1,48 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { toast } from "sonner";
-import { Play, AlertCircle } from "lucide-react";
+import { Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AgentTrace } from "@/components/agents/AgentTrace";
+import { AgentUnavailable } from "@/components/agents/AgentUnavailable";
 import { ModelBadge } from "@/components/badges";
 import { Markdown } from "@/components/Markdown";
-import { api, AgentUnavailableError } from "@/lib/api";
-import type { AgentRun } from "@/lib/types";
+import { api } from "@/lib/api";
+import { useAgentRun } from "@/hooks/useAgentRun";
 
 export function PlanDay() {
-  const [result, setResult] = useState<AgentRun | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [unavailable, setUnavailable] = useState(false);
-
-  async function run() {
-    setLoading(true);
-    setUnavailable(false);
-    try {
-      setResult(await api.prioritize());
-    } catch (e) {
-      if (e instanceof AgentUnavailableError) {
-        setUnavailable(true);
-      } else {
-        toast.error((e as Error).message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { run, loading, result, unavailable } = useAgentRun(api.prioritize);
 
   if (unavailable) {
-    return (
-      <div className="rounded-lg border border-border bg-muted/40 p-4 text-center">
-        <AlertCircle className="mx-auto mb-2 h-5 w-5 text-muted-foreground/60" />
-        <p className="text-[13px] font-semibold text-foreground">AI agents unavailable</p>
-        <p className="mt-1 text-[11.5px] text-muted-foreground">
-          Set <code className="rounded bg-muted px-1 font-mono">GEMINI_API_KEY</code> in{" "}
-          <code className="rounded bg-muted px-1 font-mono">Backend/.env</code> and restart the
-          backend to enable agent features.
-        </p>
-      </div>
-    );
+    return <AgentUnavailable />;
   }
 
   return (

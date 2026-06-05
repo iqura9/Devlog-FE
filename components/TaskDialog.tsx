@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -38,13 +38,19 @@ export function TaskDialog({ open, task, onClose, onSaved }: TaskDialogProps) {
   const [priority, setPriority] = useState<Priority>("medium");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    setTitle(task?.title ?? "");
-    setDescription(task?.description ?? "");
-    setStatus(task?.status ?? "todo");
-    setPriority(task?.priority ?? "medium");
-  }, [open, task]);
+  // Re-seed the form whenever the dialog (re)opens or switches task — the React-idiomatic
+  // "adjust state during render" reset rather than a setState-in-effect.
+  const syncKey = open ? (task?.id ?? "new") : null;
+  const [lastSync, setLastSync] = useState<number | "new" | null>(null);
+  if (syncKey !== lastSync) {
+    setLastSync(syncKey);
+    if (open) {
+      setTitle(task?.title ?? "");
+      setDescription(task?.description ?? "");
+      setStatus(task?.status ?? "todo");
+      setPriority(task?.priority ?? "medium");
+    }
+  }
 
   async function save() {
     if (!title.trim()) {

@@ -13,10 +13,10 @@ interface MarkdownProps {
  */
 export function Markdown({ children, className }: MarkdownProps) {
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      className={cn("text-[13.5px] leading-relaxed text-foreground/85", className)}
-      components={{
+    <div className={cn("text-[13.5px] leading-relaxed text-foreground/85", className)}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
         h1: ({ children }) => (
           <h1 className="mb-2 mt-4 text-[15px] font-bold tracking-tight first:mt-0">{children}</h1>
         ),
@@ -60,9 +60,10 @@ export function Markdown({ children, className }: MarkdownProps) {
           </blockquote>
         ),
         hr: () => <hr className="my-3 border-border" />,
-      }}
-    >
-      {children}
-    </ReactMarkdown>
+        }}
+      >
+        {children}
+      </ReactMarkdown>
+    </div>
   );
 }
