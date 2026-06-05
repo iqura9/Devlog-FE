@@ -18,17 +18,10 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Priority, Status, Task } from "@/lib/types";
-import { STATUSES, PRIORITIES } from "@/lib/types";
-import { STATUS_LABELS, PRIORITY_LABELS, ageLabel } from "@/lib/format";
+import { ageLabel, STATUS_OPTIONS, PRIORITY_OPTIONS } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ControlledSelect } from "@/components/ui/ControlledSelect";
 import { AgentTrace } from "@/components/agents/AgentTrace";
 import { cn } from "@/lib/utils";
 import { useTaskEditor } from "@/hooks/useTaskEditor";
@@ -45,18 +38,6 @@ const PRIORITY_BORDER: Record<Priority, string> = {
   low: "border-l-priority-low",
 };
 
-const STATUS_TRIGGER_CLS: Record<Status, string> = {
-  todo: "bg-muted text-muted-foreground/80 border-border/40",
-  "in-progress":
-    "bg-status-progress-soft text-status-progress border-transparent",
-  done: "bg-status-done-soft text-status-done border-transparent",
-};
-
-const STATUS_DOT_CLS: Record<Status, string> = {
-  todo: "bg-muted-foreground/50",
-  "in-progress": "bg-status-progress",
-  done: "bg-status-done",
-};
 
 // ── component ─────────────────────────────────────────────────────────────────
 
@@ -280,38 +261,14 @@ export function TaskDetailView({
                         </div>
 
                         {/* Colored status select */}
-                        <Select
+                        <ControlledSelect
                           value={sub.status}
-                          onValueChange={(v) =>
+                          onChange={(v) =>
                             subs.changeStatus(sub.id, v as Status)
                           }
-                        >
-                          <SelectTrigger
-                            className={cn(
-                              "h-6 w-auto gap-1.5 rounded-full border px-2.5 py-0 text-[11px] font-semibold shadow-none",
-                              STATUS_TRIGGER_CLS[sub.status],
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                "h-1.5 w-1.5 shrink-0 rounded-full",
-                                STATUS_DOT_CLS[sub.status],
-                              )}
-                            />
-                            <span>{STATUS_LABELS[sub.status]}</span>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STATUSES.map((s) => (
-                              <SelectItem
-                                key={s}
-                                value={s}
-                                className="text-[12px]"
-                              >
-                                {STATUS_LABELS[s]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          options={STATUS_OPTIONS}
+                          variant="pill"
+                        />
 
                         {/* Delete subtask */}
                         <ConfirmDialog
@@ -590,42 +547,24 @@ export function TaskDetailView({
                 <span className="text-[13px] text-muted-foreground">
                   Status
                 </span>
-                <Select
+                <ControlledSelect
                   value={task.status}
-                  onValueChange={(v) => editor.changeStatus(v as Status)}
-                >
-                  <SelectTrigger className="h-7 w-32.5 text-[12px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {STATUS_LABELS[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(v) => editor.changeStatus(v as Status)}
+                  options={STATUS_OPTIONS}
+                  variant="pill"
+                />
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-muted-foreground">
                   Priority
                 </span>
-                <Select
+                <ControlledSelect
                   value={task.priority}
-                  onValueChange={(v) => editor.changePriority(v as Priority)}
-                >
-                  <SelectTrigger className="h-7 w-32.5 text-[12px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRIORITIES.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        {PRIORITY_LABELS[p]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(v) => editor.changePriority(v as Priority)}
+                  options={PRIORITY_OPTIONS}
+                  variant="pill"
+                />
               </div>
 
               <div className="flex items-center justify-between">

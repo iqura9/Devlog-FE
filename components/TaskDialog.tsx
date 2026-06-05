@@ -13,16 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ControlledSelect } from "@/components/ui/ControlledSelect";
 import { api } from "@/lib/api";
-import { PRIORITIES, STATUSES, type Priority, type Status, type Task } from "@/lib/types";
-import { PRIORITY_LABELS, STATUS_LABELS } from "@/lib/format";
+import { type Priority, type Status, type Task } from "@/lib/types";
+import { STATUS_OPTIONS, PRIORITY_OPTIONS } from "@/lib/format";
 
 interface TaskDialogProps {
   open: boolean;
@@ -111,33 +105,23 @@ export function TaskDialog({ open, task, onClose, onSaved }: TaskDialogProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <Label>Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {STATUS_LABELS[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ControlledSelect
+                value={status}
+                onChange={(v) => setStatus(v as Status)}
+                options={STATUS_OPTIONS}
+                variant="pill"
+                className="h-9 w-full rounded-md"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Priority</Label>
-              <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITIES.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {PRIORITY_LABELS[p]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ControlledSelect
+                value={priority}
+                onChange={(v) => setPriority(v as Priority)}
+                options={PRIORITY_OPTIONS}
+                variant="pill"
+                className="h-9 w-full rounded-md"
+              />
             </div>
           </div>
         </div>

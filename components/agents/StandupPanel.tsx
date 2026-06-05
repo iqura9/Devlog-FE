@@ -4,13 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Play, Copy, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ControlledSelect } from "@/components/ui/ControlledSelect";
 import { AgentTrace } from "@/components/agents/AgentTrace";
 import { AgentUnavailable } from "@/components/agents/AgentUnavailable";
 import { SlackMessageCard } from "@/components/agents/SlackMessageCard";
@@ -73,18 +67,15 @@ export function StandupPanel() {
             No open tasks to report on.
           </p>
         ) : (
-          <Select value={selectedId} onValueChange={setSelectedId}>
-            <SelectTrigger className="text-[12px]">
-              <SelectValue placeholder="Select a task…" />
-            </SelectTrigger>
-            <SelectContent>
-              {tasks.map((t) => (
-                <SelectItem key={t.id} value={String(t.id)}>
-                  {t.title.length > 42 ? t.title.slice(0, 42) + "…" : t.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ControlledSelect
+            value={selectedId}
+            onChange={setSelectedId}
+            options={tasks.map((t) => ({
+              value: String(t.id),
+              label: t.title.length > 42 ? t.title.slice(0, 42) + "…" : t.title,
+            }))}
+            className="text-[12px]"
+          />
         )}
 
         <Button size="sm" onClick={generate} disabled={loading || !selectedId}>

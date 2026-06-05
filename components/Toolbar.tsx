@@ -1,6 +1,6 @@
 "use client";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ControlledSelect } from "@/components/ui/ControlledSelect";
 import { cn } from "@/lib/utils";
 import type { SortKey, StatusFilter } from "@/hooks/use-tasks";
 
@@ -19,54 +19,55 @@ const FILTERS: { key: StatusFilter; label: string }[] = [
   { key: "done", label: "Done" },
 ];
 
-const SORTS: { key: SortKey; label: string }[] = [
-  { key: "priority", label: "Priority" },
-  { key: "createdAt", label: "Newest" },
-  { key: "updatedAt", label: "Recently updated" },
+const SORTS: { value: SortKey; label: string }[] = [
+  { value: "priority", label: "Priority" },
+  { value: "createdAt", label: "Newest" },
+  { value: "updatedAt", label: "Recently updated" },
 ];
 
-export function Toolbar({ filter, setFilter, counts, sort, setSort }: ToolbarProps) {
+export function Toolbar({
+  filter,
+  setFilter,
+  counts,
+  sort,
+  setSort,
+}: ToolbarProps) {
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3">
       <div className="flex gap-1 rounded-xl border border-border bg-card p-1 shadow-soft">
-        {FILTERS.map((f) => (
+        {FILTERS.map(({ key, label }) => (
           <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
+            key={key}
+            onClick={() => setFilter(key)}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors",
-              filter === f.key
+              filter === key
                 ? "bg-background text-foreground shadow-soft"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {f.label}
+            {label}
             <span
               className={cn(
                 "font-mono text-[11px]",
-                filter === f.key ? "text-accent-foreground" : "text-muted-foreground/60"
+                filter === key
+                  ? "text-accent-foreground"
+                  : "text-muted-foreground/60",
               )}
             >
-              {counts[f.key]}
+              {counts[key]}
             </span>
           </button>
         ))}
       </div>
 
       <div className="ml-auto">
-        <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-          <SelectTrigger className="w-[190px]">
-            <span className="text-muted-foreground">Sort</span>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SORTS.map((s) => (
-              <SelectItem key={s.key} value={s.key}>
-                {s.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ControlledSelect
+          value={sort}
+          onChange={(v) => setSort(v as SortKey)}
+          options={SORTS}
+          className="w-47.5"
+        />
       </div>
     </div>
   );
