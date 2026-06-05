@@ -17,7 +17,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "DevLog — AI task tracker",
-  description: "A task tracker for engineering teams with a built-in AI agent layer.",
+  description:
+    "A task tracker for engineering teams with a built-in AI agent layer.",
 };
 
 interface RootLayoutProps {
@@ -26,9 +27,14 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" className={`${plusJakarta.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="en"
+      className={`${plusJakarta.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="font-sans antialiased">
-        {children}
+        <div className="mx-auto max-w-screen-2xl px-5 pb-20 sm:px-7">
+          {children}
+        </div>
         <Toaster
           position="bottom-right"
           toastOptions={{

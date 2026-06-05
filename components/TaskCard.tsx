@@ -7,6 +7,7 @@ import { PriorityBadge, StatusBadge } from "@/components/badges";
 import { ageLabel, ageInDays } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Priority, TaskWithSubtasks } from "@/lib/types";
+import { Links, resolvePath } from "@/routes/paths";
 
 const ACCENT_BAR: Record<Priority, string> = {
   high: "before:bg-priority-high",
@@ -40,7 +41,7 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
       )
     )
       return;
-    router.push(`/tasks/${task.id}`);
+    router.push(resolvePath(Links.tasks.view, { id: task.id }));
   }
 
   return (

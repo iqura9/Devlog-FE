@@ -1,16 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { api } from "@/lib/api";
+import { useMemo, useState } from "react";
 import type { Status, Task, TaskWithSubtasks } from "@/lib/types";
 
 export type StatusFilter = Status | "all";
 export type SortKey = "priority" | "createdAt" | "updatedAt";
-
-interface UseTasksInit {
-  initialTasks?: Task[];
-  initialError?: string | null;
-}
 
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
@@ -28,44 +22,24 @@ function sortTasks(tasks: TaskWithSubtasks[], sort: SortKey): TaskWithSubtasks[]
   });
 }
 
-export function useTasks({ initialTasks, initialError }: UseTasksInit = {}) {
-  const [flat, setFlat] = useState<Task[]>(initialTasks ?? []);
+export function useTaskBoard(allTasks: Task[]) {
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<SortKey>("priority");
-  const [loading, setLoading] = useState(!initialTasks);
-  const [error, setError] = useState<string | null>(initialError ?? null);
-
-  const refresh = useCallback(async () => {
-    try {
-      const apiSort = sort === "updatedAt" ? "priority" : sort;
-      const data = await api.listTasks({ sortBy: apiSort });
-      setFlat(data);
-      setError(null);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, [sort]);
-
-  useEffect(() => {
-    if (!initialTasks) refresh();
-  }, [refresh]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const grouped = useMemo((): TaskWithSubtasks[] => {
     const children = new Map<number, Task[]>();
-    for (const t of flat) {
+    for (const t of allTasks) {
       if (t.parentId !== null) {
         const arr = children.get(t.parentId) ?? [];
         arr.push(t);
         children.set(t.parentId, arr);
       }
     }
-    const roots = flat
+    const roots = allTasks
       .filter((t) => t.parentId === null)
       .map((t) => ({ ...t, subtasks: children.get(t.id) ?? [] }));
     return sortTasks(roots, sort);
-  }, [flat, sort]);
+  }, [allTasks, sort]);
 
   const counts = useMemo(() => {
     const c: Record<StatusFilter, number> = { all: 0, todo: 0, "in-progress": 0, done: 0 };
@@ -81,5 +55,5 @@ export function useTasks({ initialTasks, initialError }: UseTasksInit = {}) {
     [grouped, filter]
   );
 
-  return { tasks, counts, filter, setFilter, sort, setSort, loading, error, refresh };
+  return { tasks, counts, filter, setFilter, sort, setSort };
 }

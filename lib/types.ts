@@ -19,6 +19,11 @@ export interface Task {
   updatedAt: string; // ISO-8601
 }
 
+export interface TasksResult {
+  tasks: Task[];
+  error: string | null;
+}
+
 /** Task enriched on the client with its direct children grouped in. */
 export type TaskWithSubtasks = Task & { subtasks: Task[] };
 
@@ -33,8 +38,8 @@ export interface AgentStep {
 
 /** The envelope every agent endpoint wraps its output in. */
 export interface AgentRun {
-  output: string;   // markdown (prioritize / status-update / sweep-stale) or JSON string (decompose)
-  model: string;    // e.g. "gemini-2.5-flash"
+  output: string; // markdown (prioritize / status-update / sweep-stale) or JSON string (decompose)
+  model: string; // e.g. "gemini-2.5-flash"
   steps: AgentStep[];
 }
 

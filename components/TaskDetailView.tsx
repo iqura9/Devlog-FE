@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Links, resolvePath } from "@/routes/paths";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ import {
 import { AgentTrace } from "@/components/agents/AgentTrace";
 import { cn } from "@/lib/utils";
 import type { DecomposeOutput } from "@/lib/types";
+import { Header } from "./Header";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -42,7 +44,8 @@ const PRIORITY_BORDER: Record<Priority, string> = {
 
 const STATUS_TRIGGER_CLS: Record<Status, string> = {
   todo: "bg-muted text-muted-foreground/80 border-border/40",
-  "in-progress": "bg-status-progress-soft text-status-progress border-transparent",
+  "in-progress":
+    "bg-status-progress-soft text-status-progress border-transparent",
   done: "bg-status-done-soft text-status-done border-transparent",
 };
 
@@ -70,7 +73,10 @@ interface TaskDetailViewProps {
   initialSubtasks: Task[];
 }
 
-export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewProps) {
+export function TaskDetailView({
+  initialTask,
+  initialSubtasks,
+}: TaskDetailViewProps) {
   const router = useRouter();
 
   const [task, setTask] = useState<Task | null>(initialTask);
@@ -79,11 +85,17 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
   // Local edit state
   const [title, setTitle] = useState(initialTask.title);
   const [description, setDescription] = useState(initialTask.description);
-  const [editingField, setEditingField] = useState<"title" | "desc" | null>(null);
+  const [editingField, setEditingField] = useState<"title" | "desc" | null>(
+    null,
+  );
 
   // Debounce refs
-  const titleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const descTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const titleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const descTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
 
   // Inline add-subtask
   const [addingSubtask, setAddingSubtask] = useState(false);
@@ -142,23 +154,32 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
 
   async function changeStatus(status: Status) {
     if (!task) return;
-    try { setTask(await api.updateTask(task.id, { status })); }
-    catch (e) { toast.error((e as Error).message); }
+    try {
+      setTask(await api.updateTask(task.id, { status }));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
 
   async function changePriority(priority: Priority) {
     if (!task) return;
-    try { setTask(await api.updateTask(task.id, { priority })); }
-    catch (e) { toast.error((e as Error).message); }
+    try {
+      setTask(await api.updateTask(task.id, { priority }));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
 
   async function deleteTask() {
-    if (!task || !confirm(`Delete "${task.title}"? This can't be undone.`)) return;
+    if (!task || !confirm(`Delete "${task.title}"? This can't be undone.`))
+      return;
     try {
       await api.deleteTask(task.id);
       toast.success("Task deleted");
-      router.push("/");
-    } catch (e) { toast.error((e as Error).message); }
+      router.push(Links.tasks.index);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
 
   // ── subtask mutations ───────────────────────────────────────────────────────
@@ -166,8 +187,10 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
   async function changeSubtaskStatus(subId: number, status: Status) {
     try {
       const updated = await api.updateTask(subId, { status });
-      setSubtasks((prev) => prev.map((s) => s.id === subId ? updated : s));
-    } catch (e) { toast.error((e as Error).message); }
+      setSubtasks((prev) => prev.map((s) => (s.id === subId ? updated : s)));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
 
   async function saveSubtaskTitle(sub: Task) {
@@ -176,8 +199,10 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
     if (!trimmed || trimmed === sub.title) return;
     try {
       const updated = await api.updateTask(sub.id, { title: trimmed });
-      setSubtasks((prev) => prev.map((s) => s.id === sub.id ? updated : s));
-    } catch (e) { toast.error((e as Error).message); }
+      setSubtasks((prev) => prev.map((s) => (s.id === sub.id ? updated : s)));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
 
   async function changeSubtaskEstimation(subId: number, value: string) {
@@ -185,25 +210,33 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
     if (hours !== null && (isNaN(hours) || hours <= 0)) return;
     try {
       const updated = await api.updateTask(subId, { estimation: hours });
-      setSubtasks((prev) => prev.map((s) => s.id === subId ? updated : s));
-    } catch (e) { toast.error((e as Error).message); }
+      setSubtasks((prev) => prev.map((s) => (s.id === subId ? updated : s)));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
 
   async function deleteSubtask(subId: number) {
     try {
       await api.deleteTask(subId);
       setSubtasks((prev) => prev.filter((s) => s.id !== subId));
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
 
   async function addSubtask() {
     if (!task || !newSubtaskTitle.trim()) return;
     try {
-      const sub = await api.createSubtask(task.id, { title: newSubtaskTitle.trim() });
+      const sub = await api.createSubtask(task.id, {
+        title: newSubtaskTitle.trim(),
+      });
       setSubtasks((prev) => [...prev, sub]);
       setNewSubtaskTitle("");
       setAddingSubtask(false);
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
 
   // ── inline decompose ────────────────────────────────────────────────────────
@@ -247,14 +280,21 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
   async function applyDecompose() {
     if (!task) return;
     const toCreate = dSuggestions.filter((_, i) => dSelected.has(i));
-    if (!toCreate.length) { toast.error("Select at least one subtask"); return; }
+    if (!toCreate.length) {
+      toast.error("Select at least one subtask");
+      return;
+    }
     setDPhase("applying");
     try {
       const created = await Promise.all(
-        toCreate.map((s) => api.createSubtask(task.id, { title: s.title, priority: s.priority }))
+        toCreate.map((s) =>
+          api.createSubtask(task.id, { title: s.title, priority: s.priority }),
+        ),
       );
       setSubtasks((prev) => [...prev, ...created]);
-      toast.success(`Added ${created.length} subtask${created.length !== 1 ? "s" : ""}`);
+      toast.success(
+        `Added ${created.length} subtask${created.length !== 1 ? "s" : ""}`,
+      );
       setDPhase("idle");
     } catch (e) {
       toast.error((e as Error).message);
@@ -277,30 +317,26 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
   const isRoot = task.parentId === null;
 
   return (
-    <div className="mx-auto max-w-[1320px] px-5 pb-20 sm:px-7">
-      {/* ── header ── */}
-      <header className="flex items-center gap-3.5 py-5">
-        <Link href="/" className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-[hsl(240_70%_48%)] text-primary-foreground shadow-card">
-          <span className="text-xl font-extrabold tracking-tight">D</span>
-        </Link>
-        <div>
-          <h1 className="text-xl font-extrabold tracking-tight">DevLog</h1>
-          <p className="-mt-0.5 font-mono text-[10.5px] font-semibold uppercase tracking-widest text-muted-foreground">AI task tracker</p>
-        </div>
-      </header>
+    <div className="w-full">
+      <Header />
 
-      <Link href="/" className="mb-6 inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground">
+      <Link
+        href={Links.tasks.index}
+        className="mb-6 inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+      >
         <ArrowLeft className="h-3.5 w-3.5" />
         All tasks
       </Link>
 
       <div className="mt-4 grid grid-cols-1 items-start gap-5 lg:grid-cols-[1fr_260px]">
         {/* ── main card ── */}
-        <div className={cn(
-          "overflow-hidden rounded-xl border border-border bg-card shadow-card",
-          "border-l-4",
-          PRIORITY_BORDER[task.priority]
-        )}>
+        <div
+          className={cn(
+            "overflow-hidden rounded-xl border border-border bg-card shadow-card",
+            "border-l-4",
+            PRIORITY_BORDER[task.priority],
+          )}
+        >
           <div className="p-6">
             {/* Title — debounced, shows outline on focus */}
             <input
@@ -309,13 +345,18 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                 "rounded-lg border border-transparent px-2 py-1 -ml-2 -mt-1",
                 "placeholder:text-muted-foreground/40 transition-all duration-150",
                 "focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10",
-                editingField === "title" && "border-primary/30 bg-primary/5"
+                editingField === "title" && "border-primary/30 bg-primary/5",
               )}
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
               onFocus={() => setEditingField("title")}
-              onBlur={() => { setEditingField(null); saveField("title", title); }}
-              onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+              onBlur={() => {
+                setEditingField(null);
+                saveField("title", title);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
               placeholder="Task title"
             />
 
@@ -328,12 +369,15 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                 className={cn(
                   "min-h-[100px] resize-none bg-transparent shadow-none transition-all duration-150",
                   "border-border/40 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/10",
-                  editingField === "desc" && "border-primary/30 bg-primary/5"
+                  editingField === "desc" && "border-primary/30 bg-primary/5",
                 )}
                 value={description}
                 onChange={(e) => handleDescChange(e.target.value)}
                 onFocus={() => setEditingField("desc")}
-                onBlur={() => { setEditingField(null); saveField("description", description); }}
+                onBlur={() => {
+                  setEditingField(null);
+                  saveField("description", description);
+                }}
                 placeholder="Add context, links, acceptance criteria…"
               />
               {editingField === "desc" ? (
@@ -358,7 +402,11 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                     <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
                       <div
                         className="h-full rounded-full bg-status-done transition-all duration-300"
-                        style={{ width: `${Math.round((doneCount / subtasks.length) * 100)}%` }}
+                        style={{
+                          width: `${Math.round(
+                            (doneCount / subtasks.length) * 100,
+                          )}%`,
+                        }}
                       />
                     </div>
                   ) : null}
@@ -388,7 +436,7 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                         className={cn(
                           "group flex items-center gap-2.5 rounded-lg border border-border bg-background py-2 pl-3 pr-2.5",
                           "border-l-[3px]",
-                          PRIORITY_BORDER[sub.priority]
+                          PRIORITY_BORDER[sub.priority],
                         )}
                       >
                         {/* Title — double-click to edit */}
@@ -397,7 +445,9 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                             autoFocus
                             className="flex-1 rounded border border-primary/40 bg-primary/5 px-1.5 py-0.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20"
                             value={editingSubtaskTitle}
-                            onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                            onChange={(e) =>
+                              setEditingSubtaskTitle(e.target.value)
+                            }
                             onBlur={() => saveSubtaskTitle(sub)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") saveSubtaskTitle(sub);
@@ -408,7 +458,7 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                           <span
                             className={cn(
                               "flex-1 cursor-default select-none text-[13px]",
-                              done && "text-muted-foreground/60 line-through"
+                              done && "text-muted-foreground/60 line-through",
                             )}
                             onDoubleClick={() => {
                               setEditingSubtaskId(sub.id);
@@ -429,29 +479,44 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                             className="w-14 rounded border border-border/60 bg-transparent px-1.5 py-0.5 text-center font-mono text-[11px] text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
                             value={sub.estimation ?? ""}
                             placeholder="—"
-                            onChange={(e) => changeSubtaskEstimation(sub.id, e.target.value)}
+                            onChange={(e) =>
+                              changeSubtaskEstimation(sub.id, e.target.value)
+                            }
                             title="Estimated hours"
                           />
-                          <span className="text-[10px] text-muted-foreground/50">h</span>
+                          <span className="text-[10px] text-muted-foreground/50">
+                            h
+                          </span>
                         </div>
 
                         {/* Colored status select */}
                         <Select
                           value={sub.status}
-                          onValueChange={(v) => changeSubtaskStatus(sub.id, v as Status)}
+                          onValueChange={(v) =>
+                            changeSubtaskStatus(sub.id, v as Status)
+                          }
                         >
                           <SelectTrigger
                             className={cn(
                               "h-6 w-auto gap-1.5 rounded-full border px-2.5 py-0 text-[11px] font-semibold shadow-none",
-                              STATUS_TRIGGER_CLS[sub.status]
+                              STATUS_TRIGGER_CLS[sub.status],
                             )}
                           >
-                            <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", STATUS_DOT_CLS[sub.status])} />
+                            <span
+                              className={cn(
+                                "h-1.5 w-1.5 shrink-0 rounded-full",
+                                STATUS_DOT_CLS[sub.status],
+                              )}
+                            />
                             <span>{STATUS_LABELS[sub.status]}</span>
                           </SelectTrigger>
                           <SelectContent>
                             {STATUSES.map((s) => (
-                              <SelectItem key={s} value={s} className="text-[12px]">
+                              <SelectItem
+                                key={s}
+                                value={s}
+                                className="text-[12px]"
+                              >
                                 {STATUS_LABELS[s]}
                               </SelectItem>
                             ))}
@@ -483,12 +548,24 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                     placeholder="Subtask title…"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") addSubtask();
-                      if (e.key === "Escape") { setAddingSubtask(false); setNewSubtaskTitle(""); }
+                      if (e.key === "Escape") {
+                        setAddingSubtask(false);
+                        setNewSubtaskTitle("");
+                      }
                     }}
                   />
-                  <Button size="sm" onClick={addSubtask} disabled={!newSubtaskTitle.trim()}>Add</Button>
+                  <Button
+                    size="sm"
+                    onClick={addSubtask}
+                    disabled={!newSubtaskTitle.trim()}
+                  >
+                    Add
+                  </Button>
                   <button
-                    onClick={() => { setAddingSubtask(false); setNewSubtaskTitle(""); }}
+                    onClick={() => {
+                      setAddingSubtask(false);
+                      setNewSubtaskTitle("");
+                    }}
                     className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted"
                   >
                     <X className="h-4 w-4" />
@@ -506,7 +583,13 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
 
               {/* ── inline decompose section ── */}
               {dPhase !== "idle" ? (
-                <div className="mt-4 rounded-xl p-[1.5px]" style={{ background: "linear-gradient(135deg, hsl(222 83% 56%), hsl(270 60% 55%))" }}>
+                <div
+                  className="mt-4 rounded-xl p-[1.5px]"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, hsl(222 83% 56%), hsl(270 60% 55%))",
+                  }}
+                >
                   <div className="rounded-[calc(0.7rem-1.5px)] bg-card p-4">
                     {/* Loading */}
                     {dPhase === "loading" ? (
@@ -538,14 +621,23 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                           value={dAnswer}
                           onChange={(e) => setDAnswer(e.target.value)}
                           placeholder="Your answer (optional)…"
-                          onKeyDown={(e) => { if (e.key === "Enter") runDecompose(dAnswer); }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") runDecompose(dAnswer);
+                          }}
                           autoFocus
                         />
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => setDPhase("idle")}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDPhase("idle")}
+                          >
                             Cancel
                           </Button>
-                          <Button size="sm" onClick={() => runDecompose(dAnswer)}>
+                          <Button
+                            size="sm"
+                            onClick={() => runDecompose(dAnswer)}
+                          >
                             <Wand2 className="h-3.5 w-3.5" />
                             Generate subtasks
                           </Button>
@@ -554,11 +646,13 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                     ) : null}
 
                     {/* Suggestions */}
-                    {(dPhase === "suggest" || dPhase === "applying") ? (
+                    {dPhase === "suggest" || dPhase === "applying" ? (
                       <div className="flex flex-col gap-3">
                         <div className="flex items-center gap-1.5">
                           <Sparkles className="h-3.5 w-3.5 text-primary" />
-                          <p className="text-[13px] font-semibold text-primary">Suggested subtasks</p>
+                          <p className="text-[13px] font-semibold text-primary">
+                            Suggested subtasks
+                          </p>
                         </div>
 
                         <ul className="flex flex-col gap-1.5">
@@ -569,17 +663,24 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                                 "flex items-center gap-2.5 rounded-lg border px-3 py-2 text-[13px] transition-colors cursor-pointer",
                                 dSelected.has(i)
                                   ? "border-primary/30 bg-primary/5"
-                                  : "border-dashed border-border text-muted-foreground"
+                                  : "border-dashed border-border text-muted-foreground",
                               )}
                               onClick={() => toggleSuggestion(i)}
                             >
-                              <div className={cn(
-                                "grid h-4 w-4 shrink-0 place-items-center rounded-[5px] border-[1.5px]",
-                                dSelected.has(i)
-                                  ? "border-primary bg-primary text-primary-foreground"
-                                  : "border-border"
-                              )}>
-                                {dSelected.has(i) ? <Check className="h-2.5 w-2.5" strokeWidth={4} /> : null}
+                              <div
+                                className={cn(
+                                  "grid h-4 w-4 shrink-0 place-items-center rounded-[5px] border-[1.5px]",
+                                  dSelected.has(i)
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border",
+                                )}
+                              >
+                                {dSelected.has(i) ? (
+                                  <Check
+                                    className="h-2.5 w-2.5"
+                                    strokeWidth={4}
+                                  />
+                                ) : null}
                               </div>
                               <span className="flex-1">{s.title}</span>
                               {s.priority ? (
@@ -590,10 +691,15 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setDSuggestions((prev) => prev.filter((_, j) => j !== i));
+                                  setDSuggestions((prev) =>
+                                    prev.filter((_, j) => j !== i),
+                                  );
                                   setDSelected((prev) => {
                                     const next = new Set<number>();
-                                    prev.forEach((v) => { if (v < i) next.add(v); else if (v > i) next.add(v - 1); });
+                                    prev.forEach((v) => {
+                                      if (v < i) next.add(v);
+                                      else if (v > i) next.add(v - 1);
+                                    });
                                     return next;
                                   });
                                 }}
@@ -611,7 +717,10 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                           value={dRefinement}
                           onChange={(e) => setDRefinement(e.target.value)}
                           placeholder="Ask AI to refine suggestions…"
-                          onKeyDown={(e) => { if (e.key === "Enter" && dRefinement.trim()) runDecompose(dRefinement); }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && dRefinement.trim())
+                              runDecompose(dRefinement);
+                          }}
                         />
 
                         <div className="flex items-center justify-between gap-2">
@@ -637,9 +746,13 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                             <Button
                               size="sm"
                               onClick={applyDecompose}
-                              disabled={dSelected.size === 0 || dPhase === "applying"}
+                              disabled={
+                                dSelected.size === 0 || dPhase === "applying"
+                              }
                             >
-                              {dPhase === "applying" ? "Adding…" : `Add ${dSelected.size}`}
+                              {dPhase === "applying"
+                                ? "Adding…"
+                                : `Add ${dSelected.size}`}
                             </Button>
                           </div>
                         </div>
@@ -651,7 +764,12 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
                       <div className="flex items-center gap-2 rounded-lg bg-muted/60 p-3 text-[13px]">
                         <AlertCircle className="h-4 w-4 shrink-0 text-muted-foreground/60" />
                         <span className="text-muted-foreground">{dError}</span>
-                        <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setDPhase("idle")}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="ml-auto"
+                          onClick={() => setDPhase("idle")}
+                        >
                           Dismiss
                         </Button>
                       </div>
@@ -671,35 +789,51 @@ export function TaskDetailView({ initialTask, initialSubtasks }: TaskDetailViewP
             </p>
             <div className="flex flex-col gap-3.5">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-muted-foreground">Status</span>
-                <Select value={task.status} onValueChange={(v) => changeStatus(v as Status)}>
+                <span className="text-[13px] text-muted-foreground">
+                  Status
+                </span>
+                <Select
+                  value={task.status}
+                  onValueChange={(v) => changeStatus(v as Status)}
+                >
                   <SelectTrigger className="h-7 w-[130px] text-[12px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                      <SelectItem key={s} value={s}>
+                        {STATUS_LABELS[s]}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-muted-foreground">Priority</span>
-                <Select value={task.priority} onValueChange={(v) => changePriority(v as Priority)}>
+                <span className="text-[13px] text-muted-foreground">
+                  Priority
+                </span>
+                <Select
+                  value={task.priority}
+                  onValueChange={(v) => changePriority(v as Priority)}
+                >
                   <SelectTrigger className="h-7 w-[130px] text-[12px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {PRIORITIES.map((p) => (
-                      <SelectItem key={p} value={p}>{PRIORITY_LABELS[p]}</SelectItem>
+                      <SelectItem key={p} value={p}>
+                        {PRIORITY_LABELS[p]}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-muted-foreground">Created</span>
+                <span className="text-[13px] text-muted-foreground">
+                  Created
+                </span>
                 <span className="font-mono text-[12px] text-muted-foreground">
                   {ageLabel(task.createdAt)}
                 </span>
