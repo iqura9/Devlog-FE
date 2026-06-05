@@ -63,6 +63,8 @@ export function Toolbar({
 
       <div className="ml-auto">
         <ControlledSelect
+          label="Sort by"
+          labelPosition="left"
           value={sort}
           onChange={(v) => setSort(v as SortKey)}
           options={SORTS}

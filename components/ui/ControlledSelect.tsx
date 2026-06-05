@@ -1,6 +1,11 @@
 "use client";
 
-import { Controller, type Control, type FieldValues, type Path } from "react-hook-form";
+import {
+  Controller,
+  type Control,
+  type FieldValues,
+  type Path,
+} from "react-hook-form";
 import {
   Select,
   SelectContent,
@@ -22,6 +27,7 @@ interface SharedProps {
   className?: string;
   variant?: "default" | "pill";
   label?: string;
+  labelPosition?: "top" | "left";
 }
 
 interface WithHandlers extends SharedProps {
@@ -63,7 +69,12 @@ function SelectCore({
           )}
         >
           {current?.dotCls ? (
-            <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", current.dotCls)} />
+            <span
+              className={cn(
+                "h-1.5 w-1.5 shrink-0 rounded-full",
+                current.dotCls,
+              )}
+            />
           ) : null}
           <span>{current?.label}</span>
         </SelectTrigger>
@@ -90,7 +101,7 @@ function SelectCore({
 export function ControlledSelect<T extends FieldValues = FieldValues>(
   props: ControlledSelectProps<T>,
 ) {
-  const { label, options, className, variant } = props;
+  const { label, labelPosition = "top", options, className, variant } = props;
 
   const select = props.control ? (
     <Controller
@@ -119,7 +130,13 @@ export function ControlledSelect<T extends FieldValues = FieldValues>(
   if (!label) return select;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div
+      className={cn(
+        labelPosition === "left"
+          ? "flex items-center gap-2"
+          : "flex flex-col gap-1.5",
+      )}
+    >
       <Label>{label}</Label>
       {select}
     </div>
