@@ -39,11 +39,7 @@ export function TaskBoard({ tasksPromise }: TaskBoardProps) {
         sort={sort}
         setSort={setSort}
       />
-      <TaskList
-        tasks={tasks}
-        loading={false}
-        staleThreshold={STALE_THRESHOLD_DAYS}
-      />
+      <TaskList tasks={tasks} staleThreshold={STALE_THRESHOLD_DAYS} />
     </>
   );
 }
