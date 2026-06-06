@@ -103,5 +103,30 @@ export interface StandupReport {
   planComparison?: StandupPlanComparison; // present only when a plan was passed
 }
 
+// ── Triage output (parsed from the stale-sweeper agent's AgentRun.output JSON string) ──
+
+export type TriageAction = "raise_priority" | "split" | "close" | "escalate" | "monitor";
+
+export interface TriageItem {
+  id: number;
+  title: string;
+  status: Status;
+  priority: Priority;
+  daysSinceUpdate: number;
+  diagnosis: string;
+  action: TriageAction;
+  applied: boolean;
+  changes?: string;
+}
+
+export interface TriageReport {
+  date: string;
+  thresholdDays: number;
+  summary: string;
+  stale: TriageItem[];
+  healthy: number;
+  applied: boolean;
+}
+
 // ── Status-update tones ────────────────────────────────────────────────────
 export type Tone = "technical" | "casual" | "formal";

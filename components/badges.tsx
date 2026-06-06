@@ -48,6 +48,14 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
   );
 }
 
+function abbreviateModel(raw: string): string {
+  return raw
+    .replace(/-\d{8}$/, "")      // strip YYYYMMDD suffix  e.g. -20251001
+    .replace(/-\d{2}-\d{2}$/, "") // strip MM-DD suffix    e.g. -04-17
+    .replace(/^claude-/, "")      // drop redundant "claude-" prefix
+    .slice(0, 22);
+}
+
 export function ModelBadge({ model }: { model: string }) {
   const safe = sanitizeText(model, 100);
   return (
@@ -55,7 +63,7 @@ export function ModelBadge({ model }: { model: string }) {
       className="rounded-md px-1.5 py-0.5 font-mono text-[9.5px] font-semibold uppercase tracking-wider bg-accent text-accent-foreground"
       title={safe}
     >
-      {safe}
+      {abbreviateModel(safe)}
     </span>
   );
 }
