@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { taskLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,15 @@ interface TaskEditPanelProps {
 }
 
 export function TaskEditPanel({ taskId, editor }: TaskEditPanelProps) {
+  const descRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = descRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [editor.description]);
+
   return (
     <div className="p-6">
       <span className="mb-2 block font-mono text-[11px] font-semibold text-muted-foreground/50">
@@ -40,8 +50,9 @@ export function TaskEditPanel({ taskId, editor }: TaskEditPanelProps) {
           Description
         </p>
         <Textarea
+          ref={descRef}
           className={cn(
-            "min-h-25 resize-none bg-transparent shadow-none transition-all duration-150",
+            "min-h-25 resize-none overflow-hidden bg-transparent shadow-none transition-all duration-150",
             "border-border/40 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/10",
             editor.editingField === "desc" && "border-primary/30 bg-primary/5",
           )}
