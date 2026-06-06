@@ -39,7 +39,7 @@ export interface AgentStep {
 
 /** The envelope every agent endpoint wraps its output in. */
 export interface AgentRun {
-  output: string; // JSON string (prioritize / decompose) or markdown (status-update / sweep-stale)
+  output: string; // JSON string (prioritize / decompose / status-update) or markdown (sweep-stale)
   model: string; // e.g. "gemini-2.5-flash"
   steps: AgentStep[];
 }
@@ -78,6 +78,30 @@ export interface DecomposeDecomposed {
 }
 
 export type DecomposeOutput = DecomposeNeedsClarification | DecomposeDecomposed;
+
+// ── Standup output (parsed from the status-update agent's AgentRun.output JSON string) ──
+
+export interface StandupItem {
+  id: number;
+  title: string;
+  status: Status;
+}
+
+export interface StandupPlanComparison {
+  planned: number;
+  completed: number;
+  slipped: StandupItem[];
+}
+
+export interface StandupReport {
+  date: string;                         // ISO date the report covers (YYYY-MM-DD)
+  summary: string;                      // one-line headline
+  doneToday: StandupItem[];
+  inProgress: StandupItem[];
+  nextUp: StandupItem[];                // top carry-over tasks
+  blockers: string[];
+  planComparison?: StandupPlanComparison; // present only when a plan was passed
+}
 
 // ── Status-update tones ────────────────────────────────────────────────────
 export type Tone = "technical" | "casual" | "formal";

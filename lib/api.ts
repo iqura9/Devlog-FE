@@ -122,12 +122,12 @@ export const api = {
       body: JSON.stringify(input),
     }),
 
-  /** Status-update agent: drafts a Slack-style async update. Returns markdown in output. */
+  /** Status-update agent: generates a daily standup report. Returns JSON string in output. */
   statusUpdate: (input: {
-    taskId: number;
+    plan?: { items: { id: number; title: string; hours: number }[]; focus?: string; totalHours?: number };
     notes?: string;
     tone?: Tone;
-  }): Promise<AgentRun> =>
+  } = {}): Promise<AgentRun> =>
     http<AgentRun>("/api/agents/status-update", {
       method: "POST",
       body: JSON.stringify(input),
