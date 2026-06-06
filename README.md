@@ -2,6 +2,7 @@
 
 Next.js 16 frontend for the DevLog AI task tracker.
 
+[Video Presentation](https://www.loom.com/share/65db4ead9bd345848cb81ff783491b90)
 ## Quick start
 
 > Both the Backend and Frontend must be running at the same time.
