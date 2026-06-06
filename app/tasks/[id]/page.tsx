@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTaskServer, getSubtasksServer } from "@/lib/api.server";
-import { TaskDetailView } from "@/components/TaskDetailView";
+import { TaskDetailView } from "@/app/tasks/[id]/_components/TaskDetailView";
 import type { Task } from "@/lib/types";
 
 interface PageProps {

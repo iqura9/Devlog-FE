@@ -1,7 +1,7 @@
 "use client";
 
 import { ClipboardList } from "lucide-react";
-import { TaskCard } from "@/components/TaskCard";
+import { TaskCard } from "@/app/tasks/_components/TaskCard";
 import type { TaskWithSubtasks } from "@/lib/types";
 
 interface TaskListProps {

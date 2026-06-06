@@ -2,7 +2,9 @@
 
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import Link from "next/link";
 import { toast } from "sonner";
+import { Links, resolvePath } from "@/routes/paths";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { ControlledSelect } from "@/components/ui/ControlledSelect";
 import { api } from "@/lib/api";
 import { type Priority, type Status } from "@/lib/types";
-import { STATUS_OPTIONS, PRIORITY_OPTIONS } from "@/lib/format";
+import { STATUS_OPTIONS, PRIORITY_OPTIONS, taskLabel } from "@/lib/format";
 
 interface TaskDialogProps {
   open: boolean;
@@ -41,7 +43,13 @@ export function TaskDialog({ open, onClose, onSaved }: TaskDialogProps) {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    defaultValues: { title: "", description: "", status: "todo", priority: "medium", estimation: "" },
+    defaultValues: {
+      title: "",
+      description: "",
+      status: "todo",
+      priority: "medium",
+      estimation: "",
+    },
   });
 
   useEffect(() => {
@@ -50,18 +58,32 @@ export function TaskDialog({ open, onClose, onSaved }: TaskDialogProps) {
 
   async function onSubmit(data: FormValues) {
     try {
-      const estimation = data.estimation ? parseFloat(data.estimation) : undefined;
-      await api.createTask({
+      const estimation = data.estimation
+        ? parseFloat(data.estimation)
+        : undefined;
+      const task = await api.createTask({
         title: data.title.trim(),
         description: data.description.trim(),
         status: data.status,
         priority: data.priority,
         estimation:
-          estimation !== undefined && !Number.isNaN(estimation) && estimation > 0
+          estimation !== undefined &&
+          !Number.isNaN(estimation) &&
+          estimation > 0
             ? estimation
             : undefined,
       });
-      toast.success("Task created");
+      toast.success(
+        <>
+          Saved task
+          <Link
+            href={resolvePath(Links.tasks.view, { id: task.id })}
+            className="hover:underline"
+          >
+            {taskLabel(task.id, task.title)}
+          </Link>
+        </>,
+      );
       onSaved();
       onClose();
     } catch (e) {
@@ -87,7 +109,9 @@ export function TaskDialog({ open, onClose, onSaved }: TaskDialogProps) {
                 {...register("title", { required: "Title is required" })}
               />
               {errors.title ? (
-                <p className="text-[12px] text-destructive">{errors.title.message}</p>
+                <p className="text-[12px] text-destructive">
+                  {errors.title.message}
+                </p>
               ) : null}
             </div>
 

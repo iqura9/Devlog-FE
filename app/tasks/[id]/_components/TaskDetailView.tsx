@@ -19,7 +19,12 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Priority, Status, Task } from "@/lib/types";
-import { ageLabel, STATUS_OPTIONS, PRIORITY_OPTIONS } from "@/lib/format";
+import {
+  ageLabel,
+  STATUS_OPTIONS,
+  PRIORITY_OPTIONS,
+  taskLabel,
+} from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ControlledSelect } from "@/components/ui/ControlledSelect";
@@ -28,9 +33,9 @@ import { cn } from "@/lib/utils";
 import { useTaskEditor } from "@/hooks/useTaskEditor";
 import { useSubtasks } from "@/hooks/useSubtasks";
 import { useDecompose } from "@/hooks/useDecompose";
-import { ConfirmDialog } from "./ConfirmDialog";
-import { SubtaskDialog } from "./SubtaskDialog";
-import { Header } from "./Header";
+import { ConfirmDialog } from "../../../../components/ConfirmDialog";
+import { SubtaskDialog } from "../../../../components/SubtaskDialog";
+import { Header } from "../../../../components/Header";
 
 const PRIORITY_BORDER: Record<Priority, string> = {
   high: "border-l-priority-high",
@@ -121,8 +126,10 @@ export function TaskDetailView({
       {highlightedSubtaskId ? (
         <p className="mb-4 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 font-mono text-[11.5px] text-primary/70">
           Viewing parent task — subtask{" "}
-          <span className="font-semibold">[DL-{highlightedSubtaskId}]</span> is
-          highlighted below
+          <span className="font-semibold">
+            {taskLabel(highlightedSubtaskId, "", true)}
+          </span>{" "}
+          is highlighted below
         </p>
       ) : null}
 
@@ -136,7 +143,7 @@ export function TaskDetailView({
         >
           <div className="p-6">
             <span className="mb-2 block font-mono text-[11px] font-semibold text-muted-foreground/50">
-              [DL-{task.id}]
+              {taskLabel(task.id, "", true)}
             </span>
 
             <input

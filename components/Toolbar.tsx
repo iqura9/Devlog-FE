@@ -2,7 +2,7 @@
 
 import { ControlledSelect } from "@/components/ui/ControlledSelect";
 import { cn } from "@/lib/utils";
-import type { SortKey, StatusFilter } from "@/hooks/use-tasks";
+import type { SortKey, StatusFilter } from "@/hooks/useTasks";
 
 interface ToolbarProps {
   filter: StatusFilter;

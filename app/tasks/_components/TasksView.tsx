@@ -3,8 +3,8 @@
 import { Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
-import { TaskBoard } from "@/components/TaskBoard";
-import { TaskBoardSkeleton } from "@/components/TaskBoardSkeleton";
+import { TaskBoard } from "@/app/tasks/_components/TaskBoard";
+import { TaskBoardSkeleton } from "@/app/tasks/_components/TaskBoardSkeleton";
 import { TaskDialog } from "@/app/tasks/_components/TaskDialog";
 import { AgentPanel } from "@/components/agents/AgentPanel";
 import { Plus } from "lucide-react";

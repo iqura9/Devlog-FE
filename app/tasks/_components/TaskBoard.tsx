@@ -2,8 +2,8 @@
 
 import { use } from "react";
 import { Toolbar } from "@/components/Toolbar";
-import { TaskList } from "@/components/TaskList";
-import { useTaskBoard } from "@/hooks/use-tasks";
+import { TaskList } from "@/app/tasks/_components/TaskList";
+import { useTaskBoard } from "@/hooks/useTasks";
 import { TasksResult } from "@/lib/types";
 
 const STALE_THRESHOLD_DAYS = 7;

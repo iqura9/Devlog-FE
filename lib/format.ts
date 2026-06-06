@@ -23,8 +23,14 @@ export function idleLabel(iso: string): string {
   return `idle ${d}d`;
 }
 
-export function taskLabel(id: number, title: string): string {
-  return `[DL-${id}]: ${title}`;
+export function taskLabel(
+  id: number,
+  title: string,
+  isSimpleView: boolean = false,
+): string {
+  const label = `[DL-${id}]`;
+  if (isSimpleView) return label;
+  return `${label}: ${title}`;
 }
 
 export function formatHours(hours: number): string {
