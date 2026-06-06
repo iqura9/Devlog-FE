@@ -21,6 +21,13 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### Or run both with Docker
+
+From **this folder**, `docker compose up --build` runs the frontend and backend together in
+production mode (frontend on **4000**, backend on **4001**). The compose file builds the backend from
+the sibling `../Backend` folder and persists its SQLite DB to `../Backend/data`. See
+`../Backend/README.md` for details.
+
 ---
 
 ## Architecture
@@ -150,9 +157,17 @@ return:
 
 | Variable | Default | Description |
 |---|---|---|
-| `BACKEND_URL` | `http://localhost:3001` | URL of the Express backend (server-side only, used by rewrite proxy) |
+| `BACKEND_URL` | `http://localhost:3001` | URL of the Express backend (server-side only: used by the rewrite proxy and the RSC fetchers) |
 
-Copy `.env.example` to `.env.local` (or `.env`) and edit as needed.
+`BACKEND_URL` needs **two different values** depending on how you run the app, so split it across two files:
+
+- **`.env`** → `BACKEND_URL=http://backend:4001` — used by **Docker Compose** (it interpolates this file)
+  to reach the backend over the compose network by service name. Also baked into the production build's
+  rewrite via the compose build arg.
+- **`.env.local`** → `BACKEND_URL=http://localhost:3001` — used by **local `npm run dev`**. Next.js
+  prefers `.env.local` over `.env`; Docker Compose ignores `.env.local`, so the two never collide.
+
+For plain local development (no Docker) you can keep a single `.env` pointing at `http://localhost:3001`.
 
 ---
 

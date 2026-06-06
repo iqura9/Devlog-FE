@@ -1,0 +1,51 @@
+# DevLog — full stack, runnable from the frontend folder.
+#
+#   cd Develog-FE && docker compose up --build
+#
+# Same as the root compose file, but paths are relative to this folder
+# (the backend lives one level up in ../Backend).
+services:
+  backend:
+    build:
+      context: ../Backend
+    image: devlog-backend
+    restart: unless-stopped
+    # AI keys (GEMINI_API_KEY / ANTHROPIC_API_KEY) are read from ../Backend/.env.
+    env_file:
+      - ../Backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: 4001
+      DB_PATH: data/devlog.db
+      CORS_ORIGIN: https://devlog.iqurabooks.com
+    ports:
+      - "${BACKEND_PORT:-4001}:4001"
+    volumes:
+      # SQLite lives on the host so it survives container rebuilds/restarts.
+      - ../Backend/data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      args:
+        # Read from the .env next to this file (compose interpolation); falls back to the
+        # compose service address. Baked into the build-time rewrite + used at runtime below.
+        BACKEND_URL: ${BACKEND_URL:-http://backend:4001}
+    image: devlog-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      HOSTNAME: 0.0.0.0
+      BACKEND_URL: ${BACKEND_URL:-http://backend:4001}
+    ports:
+      - "${FRONTEND_PORT:-4000}:4000"
+    depends_on:
+      backend:
+        condition: service_started
