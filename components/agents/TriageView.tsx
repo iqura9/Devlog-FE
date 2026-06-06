@@ -27,7 +27,6 @@ export function TriageView({ report }: TriageViewProps) {
 
   return (
     <div className="rounded-lg border border-border bg-card">
-      {/* Summary row */}
       <div className="flex items-center justify-between gap-2 border-b border-border px-3.5 py-2.5">
         <p className="text-[13px] font-bold leading-snug">{report.summary}</p>
         <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
@@ -35,7 +34,6 @@ export function TriageView({ report }: TriageViewProps) {
         </span>
       </div>
 
-      {/* Stale items */}
       <ul className="flex flex-col divide-y divide-border/50">
         {report.stale.map((item) => (
           <TriageItemRow key={item.id} item={item} applied={report.applied} />

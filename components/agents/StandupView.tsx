@@ -12,7 +12,6 @@ interface StandupViewProps {
 export function StandupView({ report }: StandupViewProps) {
   return (
     <div className="rounded-lg border border-border bg-card">
-      {/* Slack-style header */}
       <div className="flex items-center gap-2 border-b border-border px-3.5 py-2.5">
         <div className="h-6 w-6 rounded-md bg-gradient-to-br from-primary to-[hsl(240_70%_48%)]" />
         <span className="text-[13px] font-bold">you</span>
@@ -21,12 +20,10 @@ export function StandupView({ report }: StandupViewProps) {
         </span>
       </div>
 
-      {/* Summary headline */}
       <div className="border-b border-border px-3.5 py-2.5">
         <p className="text-[13px] leading-snug text-foreground/85">{report.summary}</p>
       </div>
 
-      {/* Done today */}
       {report.doneToday.length > 0 ? (
         <Section label="✅ Done today">
           {report.doneToday.map((item) => (
@@ -35,7 +32,6 @@ export function StandupView({ report }: StandupViewProps) {
         </Section>
       ) : null}
 
-      {/* In progress */}
       {report.inProgress.length > 0 ? (
         <Section label="🔄 In progress">
           {report.inProgress.map((item) => (
@@ -44,7 +40,6 @@ export function StandupView({ report }: StandupViewProps) {
         </Section>
       ) : null}
 
-      {/* Next up */}
       {report.nextUp.length > 0 ? (
         <Section label="📋 Next up">
           {report.nextUp.map((item) => (
@@ -53,7 +48,6 @@ export function StandupView({ report }: StandupViewProps) {
         </Section>
       ) : null}
 
-      {/* Blockers */}
       {report.blockers.length > 0 ? (
         <Section label="🚧 Blockers">
           {report.blockers.map((b, i) => (
@@ -64,7 +58,6 @@ export function StandupView({ report }: StandupViewProps) {
         </Section>
       ) : null}
 
-      {/* Plan comparison */}
       {report.planComparison ? (
         <div className="border-t border-border px-3.5 py-2 font-mono text-[11px] text-muted-foreground">
           Plan: {report.planComparison.planned} task{report.planComparison.planned !== 1 ? "s" : ""} planned

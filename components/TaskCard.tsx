@@ -131,10 +131,8 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
         </div>
       </div>
 
-      {/* Expanded subtask list */}
       {expanded && task.subtasks.length > 0 ? (
         <div className="mt-3.5 border-t border-dashed border-border pt-3.5">
-          {/* Progress bar */}
           <div className="mb-2.5 flex items-center gap-2.5">
             <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
               Subtasks {doneCount}/{task.subtasks.length}

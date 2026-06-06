@@ -38,8 +38,6 @@ async function http<T>(url: string, init?: RequestInit): Promise<T> {
   return (body.data !== undefined ? body.data : body) as T;
 }
 
-// ── Tasks ──────────────────────────────────────────────────────────────────
-
 export interface TaskFilters {
   status?: Status;
   sortBy?: "priority" | "createdAt";
@@ -102,8 +100,6 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ status: done ? "done" : "todo" }),
     }),
-
-  // ── Agents ──────────────────────────────────────────────────────────────
 
   /** Prioritization agent: ranks open tasks with multi-step reasoning. Returns markdown in output. */
   prioritize: (): Promise<AgentRun> =>

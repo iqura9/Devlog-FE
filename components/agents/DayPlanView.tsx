@@ -13,7 +13,6 @@ interface DayPlanViewProps {
 export function DayPlanView({ plan }: DayPlanViewProps) {
   return (
     <div className="rounded-lg border border-border bg-card">
-      {/* Header: focus + total */}
       <div className="flex items-center justify-between gap-2 border-b border-border px-3.5 py-2.5">
         <p className="text-[13px] font-bold leading-snug">
           {plan.focus || "Today's plan"}
@@ -24,7 +23,6 @@ export function DayPlanView({ plan }: DayPlanViewProps) {
         </span>
       </div>
 
-      {/* Ranked items */}
       {plan.items.length > 0 ? (
         <ol className="flex flex-col">
           {plan.items.map((item, i) => (
@@ -65,7 +63,6 @@ export function DayPlanView({ plan }: DayPlanViewProps) {
         </p>
       )}
 
-      {/* Optional note (backlog under/overflows the day) */}
       {plan.note ? (
         <p className="border-t border-border px-3.5 py-2 text-[12px] text-muted-foreground">
           {plan.note}

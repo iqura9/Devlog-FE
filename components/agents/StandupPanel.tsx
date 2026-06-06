@@ -119,7 +119,6 @@ export function StandupPanel() {
             </div>
           )}
 
-          {/* Redo reason prompt */}
           {redoNote !== null ? (
             <div className="mt-2.5 rounded-lg border border-border bg-card p-3">
               <p className="mb-1.5 text-[12px] font-medium">

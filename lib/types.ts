@@ -28,8 +28,6 @@ export interface TasksResult {
 /** Task enriched on the client with its direct children grouped in. */
 export type TaskWithSubtasks = Task & { subtasks: Task[] };
 
-// ── Agent types ────────────────────────────────────────────────────────────
-
 /** One tool-call step in an agent run (for the AgentTrace visualiser). */
 export interface AgentStep {
   tool: string;
@@ -44,7 +42,6 @@ export interface AgentRun {
   steps: AgentStep[];
 }
 
-// ── Day plan output (parsed from the prioritize agent's AgentRun.output) ────
 export interface DayPlanItem {
   id: number;
   title: string;
@@ -59,7 +56,6 @@ export interface DayPlan {
   note?: string;
 }
 
-// ── Decompose output (parsed from AgentRun.output JSON string) ─────────────
 export interface DecomposeNeedsClarification {
   status: "needs_clarification";
   question: string;
@@ -78,8 +74,6 @@ export interface DecomposeDecomposed {
 }
 
 export type DecomposeOutput = DecomposeNeedsClarification | DecomposeDecomposed;
-
-// ── Standup output (parsed from the status-update agent's AgentRun.output JSON string) ──
 
 export interface StandupItem {
   id: number;
@@ -102,8 +96,6 @@ export interface StandupReport {
   blockers: string[];
   planComparison?: StandupPlanComparison; // present only when a plan was passed
 }
-
-// ── Triage output (parsed from the stale-sweeper agent's AgentRun.output JSON string) ──
 
 export type TriageAction = "raise_priority" | "split" | "close" | "escalate" | "monitor";
 
@@ -128,5 +120,4 @@ export interface TriageReport {
   applied: boolean;
 }
 
-// ── Status-update tones ────────────────────────────────────────────────────
 export type Tone = "technical" | "casual" | "formal";

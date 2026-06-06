@@ -32,15 +32,11 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { SubtaskDialog } from "./SubtaskDialog";
 import { Header } from "./Header";
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-
 const PRIORITY_BORDER: Record<Priority, string> = {
   high: "border-l-priority-high",
   medium: "border-l-priority-medium",
   low: "border-l-priority-low",
 };
-
-// ── component ─────────────────────────────────────────────────────────────────
 
 interface TaskDetailViewProps {
   initialTask: Task;
@@ -60,12 +56,10 @@ export function TaskDetailView({
   const subs = useSubtasks(initialTask.id, initialSubtasks);
   const decompose = useDecompose(task, subs.appendMany);
 
-  // Inline add-subtask (UI-local)
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const subtaskInputRef = useRef<HTMLInputElement>(null);
 
-  // Scroll highlighted subtask into view on mount
   const highlightedSubtaskRef = useRef<HTMLLIElement>(null);
   useEffect(() => {
     highlightedSubtaskRef.current?.scrollIntoView({
@@ -74,11 +68,9 @@ export function TaskDetailView({
     });
   }, []);
 
-  // Subtask inline title editing (UI-local)
   const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null);
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState("");
 
-  // Subtask description viewer (UI-local)
   const [viewingSubtask, setViewingSubtask] = useState<Task | null>(null);
 
   useEffect(() => {
@@ -135,7 +127,6 @@ export function TaskDetailView({
       ) : null}
 
       <div className="mt-4 grid grid-cols-1 items-start gap-5 lg:grid-cols-[1fr_260px]">
-        {/* ── main card ── */}
         <div
           className={cn(
             "overflow-hidden rounded-xl border border-border bg-card shadow-card",
@@ -144,12 +135,10 @@ export function TaskDetailView({
           )}
         >
           <div className="p-6">
-            {/* Task identifier */}
             <span className="mb-2 block font-mono text-[11px] font-semibold text-muted-foreground/50">
               [DL-{task.id}]
             </span>
 
-            {/* Title — debounced, shows outline on focus */}
             <input
               className={cn(
                 "w-full bg-transparent text-[22px] font-extrabold tracking-tight",
@@ -169,7 +158,6 @@ export function TaskDetailView({
               placeholder="Task title"
             />
 
-            {/* Description */}
             <div className="mt-5">
               <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
                 Description
@@ -195,10 +183,8 @@ export function TaskDetailView({
             </div>
           </div>
 
-          {/* ── subtasks ── */}
           {isRoot ? (
             <div className="border-t border-border px-6 py-5">
-              {/* Header row */}
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-[14px] font-bold">Subtasks</span>
@@ -231,7 +217,6 @@ export function TaskDetailView({
                 ) : null}
               </div>
 
-              {/* Subtask cards */}
               {subs.subtasks.length > 0 ? (
                 <ul className="mb-3 flex flex-col gap-2">
                   {subs.subtasks.map((sub) => {
@@ -251,7 +236,6 @@ export function TaskDetailView({
                             : "border-border",
                         )}
                       >
-                        {/* Title — double-click to edit */}
                         {isEditingTitle ? (
                           <input
                             autoFocus
@@ -281,7 +265,6 @@ export function TaskDetailView({
                           </span>
                         )}
 
-                        {/* Estimation — hours input */}
                         <div className="flex items-center gap-1">
                           <input
                             type="number"
@@ -300,7 +283,6 @@ export function TaskDetailView({
                           </span>
                         </div>
 
-                        {/* Colored status select */}
                         <ControlledSelect
                           value={sub.status}
                           onChange={(v) =>
@@ -310,7 +292,6 @@ export function TaskDetailView({
                           variant="pill"
                         />
 
-                        {/* Open subtask description in a dialog */}
                         <button
                           onClick={() => setViewingSubtask(sub)}
                           className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-muted-foreground/40 opacity-0 transition-all group-hover:opacity-100 hover:bg-primary/10 hover:text-primary"
@@ -320,7 +301,6 @@ export function TaskDetailView({
                           <Maximize2 className="h-3.5 w-3.5" />
                         </button>
 
-                        {/* Delete subtask */}
                         <ConfirmDialog
                           onConfirm={() => subs.deleteSubtask(sub.id)}
                           title="Delete subtask?"
@@ -340,7 +320,6 @@ export function TaskDetailView({
                 </ul>
               ) : null}
 
-              {/* Add subtask */}
               {addingSubtask ? (
                 <div className="flex items-center gap-2">
                   <input
@@ -384,7 +363,6 @@ export function TaskDetailView({
                 </button>
               )}
 
-              {/* ── inline decompose section ── */}
               {decompose.phase !== "idle" ? (
                 <div
                   className="mt-4 rounded-xl p-[1.5px]"
@@ -394,7 +372,6 @@ export function TaskDetailView({
                   }}
                 >
                   <div className="rounded-[calc(0.7rem-1.5px)] bg-card p-4">
-                    {/* Loading */}
                     {decompose.phase === "loading" ? (
                       <div>
                         <AgentTrace
@@ -407,7 +384,6 @@ export function TaskDetailView({
                       </div>
                     ) : null}
 
-                    {/* Clarify */}
                     {decompose.phase === "clarify" ? (
                       <div className="flex flex-col gap-3">
                         <div className="flex items-start gap-2">
@@ -451,7 +427,6 @@ export function TaskDetailView({
                       </div>
                     ) : null}
 
-                    {/* Suggestions */}
                     {decompose.phase === "suggest" ||
                     decompose.phase === "applying" ? (
                       <div className="flex flex-col gap-3">
@@ -513,7 +488,6 @@ export function TaskDetailView({
                           ))}
                         </ul>
 
-                        {/* Refine input */}
                         <input
                           className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-[13px] text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                           value={decompose.refinement}
@@ -567,7 +541,6 @@ export function TaskDetailView({
                       </div>
                     ) : null}
 
-                    {/* Error fallback */}
                     {decompose.error ? (
                       <div className="flex items-center gap-2 rounded-lg bg-muted/60 p-3 text-[13px]">
                         <AlertCircle className="h-4 w-4 shrink-0 text-muted-foreground/60" />
@@ -591,7 +564,6 @@ export function TaskDetailView({
           ) : null}
         </div>
 
-        {/* ── details sidebar ── */}
         <div className="flex flex-col gap-3">
           <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
             <p className="mb-4 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
