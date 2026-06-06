@@ -53,7 +53,12 @@ export function DecomposePanel({ decompose }: DecomposePanelProps) {
             <input
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
               value={decompose.answer}
-              onChange={(e) => decompose.setAnswer(e.target.value)}
+              onChange={(e) =>
+                decompose.dispatch({
+                  type: "SET_ANSWER",
+                  answer: e.target.value,
+                })
+              }
               placeholder="Your answer (optional)…"
               onKeyDown={(e) => {
                 if (e.key === "Enter") decompose.run(decompose.answer);
@@ -61,7 +66,11 @@ export function DecomposePanel({ decompose }: DecomposePanelProps) {
               autoFocus
             />
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={decompose.reset}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => decompose.dispatch({ type: "RESET" })}
+              >
                 Cancel
               </Button>
               <Button size="sm" onClick={() => decompose.run(decompose.answer)}>
@@ -72,7 +81,7 @@ export function DecomposePanel({ decompose }: DecomposePanelProps) {
           </div>
         ) : null}
 
-        {decompose.phase === "suggest" || decompose.phase === "applying" ? (
+        {["suggest", "applying"].includes(decompose.phase) ? (
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
@@ -91,7 +100,9 @@ export function DecomposePanel({ decompose }: DecomposePanelProps) {
                       ? "border-primary/30 bg-primary/5"
                       : "border-dashed border-border text-muted-foreground",
                   )}
-                  onClick={() => decompose.toggle(i)}
+                  onClick={() =>
+                    decompose.dispatch({ type: "TOGGLE", index: i })
+                  }
                 >
                   <div
                     className={cn(
@@ -119,7 +130,10 @@ export function DecomposePanel({ decompose }: DecomposePanelProps) {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      decompose.removeSuggestion(i);
+                      decompose.dispatch({
+                        type: "REMOVE_SUGGESTION",
+                        index: i,
+                      });
                     }}
                     className="ml-1 grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground/40 hover:bg-muted hover:text-muted-foreground"
                   >
@@ -132,7 +146,12 @@ export function DecomposePanel({ decompose }: DecomposePanelProps) {
             <input
               className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-[13px] text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               value={decompose.refinement}
-              onChange={(e) => decompose.setRefinement(e.target.value)}
+              onChange={(e) =>
+                decompose.dispatch({
+                  type: "SET_REFINEMENT",
+                  refinement: e.target.value,
+                })
+              }
               placeholder="Ask AI to refine suggestions…"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && decompose.refinement.trim())
@@ -155,7 +174,7 @@ export function DecomposePanel({ decompose }: DecomposePanelProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={decompose.reset}
+                  onClick={() => decompose.dispatch({ type: "RESET" })}
                   disabled={decompose.phase === "applying"}
                 >
                   Discard
@@ -185,7 +204,7 @@ export function DecomposePanel({ decompose }: DecomposePanelProps) {
               variant="ghost"
               size="sm"
               className="ml-auto"
-              onClick={decompose.reset}
+              onClick={() => decompose.dispatch({ type: "RESET" })}
             >
               Dismiss
             </Button>
