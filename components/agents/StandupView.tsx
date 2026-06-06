@@ -13,7 +13,7 @@ export function StandupView({ report }: StandupViewProps) {
   return (
     <div className="rounded-lg border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border px-3.5 py-2.5">
-        <div className="h-6 w-6 rounded-md bg-gradient-to-br from-primary to-[hsl(240_70%_48%)]" />
+        <div className="h-6 w-6 rounded-md bg-linear-to-br from-primary to-[hsl(240_70%_48%)]" />
         <span className="text-[13px] font-bold">you</span>
         <span className="font-mono text-[10.5px] text-muted-foreground/70">
           {report.date} · #eng-updates
@@ -21,7 +21,9 @@ export function StandupView({ report }: StandupViewProps) {
       </div>
 
       <div className="border-b border-border px-3.5 py-2.5">
-        <p className="text-[13px] leading-snug text-foreground/85">{report.summary}</p>
+        <p className="text-[13px] leading-snug text-foreground/85">
+          {report.summary}
+        </p>
       </div>
 
       {report.doneToday.length > 0 ? (
@@ -51,7 +53,10 @@ export function StandupView({ report }: StandupViewProps) {
       {report.blockers.length > 0 ? (
         <Section label="🚧 Blockers">
           {report.blockers.map((b, i) => (
-            <li key={i} className="px-3.5 py-1.5 font-mono text-[12px] text-foreground/80">
+            <li
+              key={i}
+              className="px-3.5 py-1.5 font-mono text-[12px] text-foreground/80"
+            >
               {b}
             </li>
           ))}
@@ -60,12 +65,14 @@ export function StandupView({ report }: StandupViewProps) {
 
       {report.planComparison ? (
         <div className="border-t border-border px-3.5 py-2 font-mono text-[11px] text-muted-foreground">
-          Plan: {report.planComparison.planned} task{report.planComparison.planned !== 1 ? "s" : ""} planned
+          Plan: {report.planComparison.planned} task
+          {report.planComparison.planned !== 1 ? "s" : ""} planned
           {" · "}
           {report.planComparison.completed} done
           {report.planComparison.slipped.length > 0 ? (
             <span className="text-amber-500/80">
-              {" · "}{report.planComparison.slipped.length} slipped
+              {" · "}
+              {report.planComparison.slipped.length} slipped
             </span>
           ) : null}
         </div>
