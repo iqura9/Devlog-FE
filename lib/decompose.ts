@@ -1,24 +1,23 @@
 import type { DecomposeOutput } from "./types";
+import { extractJson } from "./json";
+import { sanitizeText } from "./sanitize";
 
-/**
- * Strips an LLM response down to its JSON payload. Handles ```json fenced blocks and any
- * preamble text before the first `{`.
- */
-function extractJson(raw: string): string {
-  const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fence) return fence[1].trim();
-  const braceStart = raw.indexOf("{");
-  return braceStart >= 0 ? raw.slice(braceStart) : raw.trim();
-}
-
-/**
- * Parses the decompose agent's `output` string into a typed `DecomposeOutput`. Falls back to a
- * single-subtask suggestion when the model returns non-JSON prose.
- */
 export function parseDecomposeOutput(output: string): DecomposeOutput {
   try {
-    return JSON.parse(extractJson(output)) as DecomposeOutput;
+    const raw = JSON.parse(extractJson(output)) as DecomposeOutput;
+    if (raw.status === "needs_clarification") {
+      return { status: "needs_clarification", question: sanitizeText(raw.question, 500) };
+    }
+    return {
+      status: "decomposed",
+      subtasks: raw.subtasks.map((s) => ({
+        title: sanitizeText(s.title, 200),
+        ...(s.description ? { description: sanitizeText(s.description, 1000) } : {}),
+        ...(s.priority ? { priority: s.priority } : {}),
+        ...(s.estimation != null ? { estimation: s.estimation } : {}),
+      })),
+    };
   } catch {
-    return { status: "decomposed", subtasks: [{ title: output }] };
+    return { status: "decomposed", subtasks: [{ title: sanitizeText(output, 200) }] };
   }
 }

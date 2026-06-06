@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { PriorityBadge, StatusBadge } from "@/components/badges";
 import { SubtaskDialog } from "@/components/SubtaskDialog";
-import { ageLabel, ageInDays, formatHours } from "@/lib/format";
+import { ageLabel, ageInDays, formatHours, taskLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Priority, Task, TaskWithSubtasks } from "@/lib/types";
 import { Links, resolvePath } from "@/routes/paths";
@@ -30,10 +30,10 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
   const isStale =
     task.status !== "done" && ageInDays(task.updatedAt) >= staleThreshold;
 
-  const estimationHours =
-    task.subtasks.length > 0
-      ? task.subtasks.reduce((sum, s) => sum + (s.estimation ?? 0), 0)
-      : task.estimation ?? 0;
+  // A task's estimation is its own value, unless it opts into summing from subtasks.
+  const estimationHours = task.estimationFromSubtasks
+    ? task.subtasks.reduce((sum, s) => sum + (s.estimation ?? 0), 0)
+    : task.estimation ?? 0;
   const hasEstimation = estimationHours > 0;
 
   function handleCardClick(e: React.MouseEvent) {
@@ -57,7 +57,7 @@ export function TaskCard({ task, staleThreshold }: TaskCardProps) {
       )}
     >
       <h3 className="text-[15.5px] font-bold leading-snug tracking-tight">
-        {`[DL-${task.id}]: ${task.title}`}
+        {taskLabel(task.id, task.title)}
       </h3>
 
       {task.description ? (

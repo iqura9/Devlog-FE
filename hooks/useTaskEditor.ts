@@ -73,6 +73,31 @@ export function useTaskEditor(initialTask: Task) {
     }
   }
 
+  const commitEstimation = useDebouncedCallback(async (hours: number | null) => {
+    try {
+      setTask(await api.updateTask(task.id, { estimation: hours }));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }, 600);
+
+  function changeEstimation(value: string) {
+    const hours = value === "" ? null : parseFloat(value);
+    if (hours !== null && (Number.isNaN(hours) || hours <= 0)) return;
+    // Optimistic local update keeps the controlled input responsive…
+    setTask((prev) => ({ ...prev, estimation: hours }));
+    // …while the actual PATCH is debounced.
+    commitEstimation.call(hours);
+  }
+
+  async function toggleEstimationFromSubtasks(value: boolean) {
+    try {
+      setTask(await api.updateTask(task.id, { estimationFromSubtasks: value }));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
+
   return {
     task,
     title,
@@ -85,5 +110,7 @@ export function useTaskEditor(initialTask: Task) {
     handleDescBlur,
     changeStatus,
     changePriority,
+    changeEstimation,
+    toggleEstimationFromSubtasks,
   };
 }

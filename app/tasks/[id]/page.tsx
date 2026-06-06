@@ -14,16 +14,32 @@ export default async function Page({ params }: PageProps) {
 
   let task: Task | undefined;
   let subtasks: Task[] = [];
+  let highlightedSubtaskId: number | undefined;
+
   try {
-    [task, subtasks] = await Promise.all([
-      getTaskServer(taskId),
-      getSubtasksServer(taskId),
-    ]);
+    const fetched = await getTaskServer(taskId);
+
+    if (fetched.parentId !== null) {
+      highlightedSubtaskId = taskId;
+      [task, subtasks] = await Promise.all([
+        getTaskServer(fetched.parentId),
+        getSubtasksServer(fetched.parentId),
+      ]);
+    } else {
+      task = fetched;
+      subtasks = await getSubtasksServer(taskId);
+    }
   } catch {
     notFound();
   }
 
   if (!task) notFound();
 
-  return <TaskDetailView initialTask={task} initialSubtasks={subtasks} />;
+  return (
+    <TaskDetailView
+      initialTask={task}
+      initialSubtasks={subtasks}
+      highlightedSubtaskId={highlightedSubtaskId}
+    />
+  );
 }

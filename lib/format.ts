@@ -23,6 +23,10 @@ export function idleLabel(iso: string): string {
   return `idle ${d}d`;
 }
 
+export function taskLabel(id: number, title: string): string {
+  return `[DL-${id}]: ${title}`;
+}
+
 export function formatHours(hours: number): string {
   return hours % 1 === 0 ? String(hours) : hours.toFixed(1);
 }

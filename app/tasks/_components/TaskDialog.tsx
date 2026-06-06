@@ -30,6 +30,7 @@ interface FormValues {
   description: string;
   status: Status;
   priority: Priority;
+  estimation: string;
 }
 
 export function TaskDialog({ open, onClose, onSaved }: TaskDialogProps) {
@@ -40,7 +41,7 @@ export function TaskDialog({ open, onClose, onSaved }: TaskDialogProps) {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    defaultValues: { title: "", description: "", status: "todo", priority: "medium" },
+    defaultValues: { title: "", description: "", status: "todo", priority: "medium", estimation: "" },
   });
 
   useEffect(() => {
@@ -49,11 +50,16 @@ export function TaskDialog({ open, onClose, onSaved }: TaskDialogProps) {
 
   async function onSubmit(data: FormValues) {
     try {
+      const estimation = data.estimation ? parseFloat(data.estimation) : undefined;
       await api.createTask({
         title: data.title.trim(),
         description: data.description.trim(),
         status: data.status,
         priority: data.priority,
+        estimation:
+          estimation !== undefined && !Number.isNaN(estimation) && estimation > 0
+            ? estimation
+            : undefined,
       });
       toast.success("Task created");
       onSaved();
@@ -110,6 +116,18 @@ export function TaskDialog({ open, onClose, onSaved }: TaskDialogProps) {
                 options={PRIORITY_OPTIONS}
                 variant="pill"
                 className="h-9 w-full rounded-md"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="estimation">Estimation (hours)</Label>
+              <Input
+                id="estimation"
+                type="number"
+                min="0.5"
+                step="0.5"
+                placeholder="e.g. 4"
+                {...register("estimation")}
               />
             </div>
           </div>

@@ -1,6 +1,9 @@
+"use client";
+
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
+import { sanitizeUrl } from "@/lib/sanitize";
 
 interface MarkdownProps {
   children: string;
@@ -60,6 +63,19 @@ export function Markdown({ children, className }: MarkdownProps) {
           </blockquote>
         ),
         hr: () => <hr className="my-3 border-border" />,
+        a: ({ href, children }) => (
+          <a
+            href={sanitizeUrl(href)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline underline-offset-2 hover:opacity-80"
+          >
+            {children}
+          </a>
+        ),
+        img: ({ src, alt }) => (
+          <img src={sanitizeUrl(src)} alt={alt ?? ""} className="max-w-full rounded" />
+        ),
         }}
       >
         {children}

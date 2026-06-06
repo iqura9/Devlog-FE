@@ -1,5 +1,8 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { PRIORITY_LABELS, STATUS_LABELS } from "@/lib/format";
+import { sanitizeText } from "@/lib/sanitize";
 import type { Priority, Status } from "@/lib/types";
 
 export function StatusBadge({ status }: { status: Status }) {
@@ -46,12 +49,13 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
 }
 
 export function ModelBadge({ model }: { model: string }) {
+  const safe = sanitizeText(model, 100);
   return (
     <span
       className="rounded-md px-1.5 py-0.5 font-mono text-[9.5px] font-semibold uppercase tracking-wider bg-accent text-accent-foreground"
-      title={model}
+      title={safe}
     >
-      {model}
+      {safe}
     </span>
   );
 }

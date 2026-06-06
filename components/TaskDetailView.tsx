@@ -40,17 +40,18 @@ const PRIORITY_BORDER: Record<Priority, string> = {
   low: "border-l-priority-low",
 };
 
-
 // ── component ─────────────────────────────────────────────────────────────────
 
 interface TaskDetailViewProps {
   initialTask: Task;
   initialSubtasks: Task[];
+  highlightedSubtaskId?: number;
 }
 
 export function TaskDetailView({
   initialTask,
   initialSubtasks,
+  highlightedSubtaskId,
 }: TaskDetailViewProps) {
   const router = useRouter();
 
@@ -63,6 +64,15 @@ export function TaskDetailView({
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const subtaskInputRef = useRef<HTMLInputElement>(null);
+
+  // Scroll highlighted subtask into view on mount
+  const highlightedSubtaskRef = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    highlightedSubtaskRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, []);
 
   // Subtask inline title editing (UI-local)
   const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null);
@@ -99,6 +109,10 @@ export function TaskDetailView({
 
   const doneCount = subs.subtasks.filter((s) => s.status === "done").length;
   const isRoot = task.parentId === null;
+  const subtaskEstimationTotal = subs.subtasks.reduce(
+    (sum, s) => sum + (s.estimation ?? 0),
+    0,
+  );
 
   return (
     <div className="w-full">
@@ -112,6 +126,14 @@ export function TaskDetailView({
         All tasks
       </Link>
 
+      {highlightedSubtaskId ? (
+        <p className="mb-4 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 font-mono text-[11.5px] text-primary/70">
+          Viewing parent task — subtask{" "}
+          <span className="font-semibold">[DL-{highlightedSubtaskId}]</span> is
+          highlighted below
+        </p>
+      ) : null}
+
       <div className="mt-4 grid grid-cols-1 items-start gap-5 lg:grid-cols-[1fr_260px]">
         {/* ── main card ── */}
         <div
@@ -122,6 +144,11 @@ export function TaskDetailView({
           )}
         >
           <div className="p-6">
+            {/* Task identifier */}
+            <span className="mb-2 block font-mono text-[11px] font-semibold text-muted-foreground/50">
+              [DL-{task.id}]
+            </span>
+
             {/* Title — debounced, shows outline on focus */}
             <input
               className={cn(
@@ -212,9 +239,17 @@ export function TaskDetailView({
                     return (
                       <li
                         key={sub.id}
-                        className={
-                          "group flex items-center gap-2.5 rounded-lg border border-border bg-background py-2 pl-3 pr-2.5"
+                        ref={
+                          sub.id === highlightedSubtaskId
+                            ? highlightedSubtaskRef
+                            : undefined
                         }
+                        className={cn(
+                          "group flex items-center gap-2.5 rounded-lg border bg-background py-2 pl-3 pr-2.5 transition-colors",
+                          sub.id === highlightedSubtaskId
+                            ? "border-primary/50 bg-primary/5 ring-2 ring-primary/20"
+                            : "border-border",
+                        )}
                       >
                         {/* Title — double-click to edit */}
                         {isEditingTitle ? (
@@ -586,6 +621,57 @@ export function TaskDetailView({
                   variant="pill"
                 />
               </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] text-muted-foreground">
+                  Estimation
+                </span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0.5"
+                    step="0.5"
+                    disabled={task.estimationFromSubtasks}
+                    className={cn(
+                      "w-16 rounded border border-border/60 bg-transparent px-1.5 py-0.5 text-center font-mono text-[12px] text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20",
+                      task.estimationFromSubtasks &&
+                        "cursor-not-allowed opacity-60",
+                    )}
+                    value={
+                      task.estimationFromSubtasks
+                        ? subtaskEstimationTotal
+                        : task.estimation ?? ""
+                    }
+                    placeholder="—"
+                    onChange={(e) => editor.changeEstimation(e.target.value)}
+                    title={
+                      task.estimationFromSubtasks
+                        ? "Summed from subtasks"
+                        : "Estimated hours"
+                    }
+                  />
+                  <span className="text-[10px] text-muted-foreground/50">
+                    h
+                  </span>
+                </div>
+              </div>
+
+              {isRoot ? (
+                <label className="flex cursor-pointer items-center justify-between">
+                  <span className="text-[13px] text-muted-foreground">
+                    Sum from subtasks
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="h-3.5 w-3.5 cursor-pointer accent-primary"
+                    checked={task.estimationFromSubtasks}
+                    onChange={(e) =>
+                      editor.toggleEstimationFromSubtasks(e.target.checked)
+                    }
+                    title="Take estimation from the sum of subtasks"
+                  />
+                </label>
+              ) : null}
 
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-muted-foreground">

@@ -67,6 +67,7 @@ export const api = {
     description?: string;
     status?: Status;
     priority?: Priority;
+    estimation?: number;
   }): Promise<Task> =>
     http<Task>("/api/tasks", { method: "POST", body: JSON.stringify(input) }),
 
@@ -76,6 +77,7 @@ export const api = {
     status?: Status;
     priority?: Priority;
     estimation?: number | null;
+    estimationFromSubtasks?: boolean;
   }): Promise<Task> =>
     http<Task>(`/api/tasks/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
 

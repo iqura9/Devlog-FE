@@ -15,6 +15,7 @@ export interface Task {
   status: Status;
   priority: Priority;
   estimation: number | null; // hours
+  estimationFromSubtasks: boolean; // when true, effective estimation = sum of subtasks
   createdAt: string; // ISO-8601
   updatedAt: string; // ISO-8601
 }
@@ -38,9 +39,24 @@ export interface AgentStep {
 
 /** The envelope every agent endpoint wraps its output in. */
 export interface AgentRun {
-  output: string; // markdown (prioritize / status-update / sweep-stale) or JSON string (decompose)
+  output: string; // JSON string (prioritize / decompose) or markdown (status-update / sweep-stale)
   model: string; // e.g. "gemini-2.5-flash"
   steps: AgentStep[];
+}
+
+// ── Day plan output (parsed from the prioritize agent's AgentRun.output) ────
+export interface DayPlanItem {
+  id: number;
+  title: string;
+  hours: number;
+  assumed: boolean; // true when the agent estimated the hours itself
+}
+
+export interface DayPlan {
+  items: DayPlanItem[];
+  focus: string;
+  totalHours: number;
+  note?: string;
 }
 
 // ── Decompose output (parsed from AgentRun.output JSON string) ─────────────
