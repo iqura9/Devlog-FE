@@ -39,6 +39,9 @@ export function useAgentRun<T, A extends unknown[] = []>(
     if (!storageKey) return;
     try {
       const raw = localStorage.getItem(storageKey);
+      // Syncing from an external system (localStorage) on mount is a legitimate effect;
+      // it's deliberately kept out of the initial state to avoid an SSR hydration mismatch.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setResult(JSON.parse(raw) as T);
     } catch {
       // ignore malformed/unavailable storage

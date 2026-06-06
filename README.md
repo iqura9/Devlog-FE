@@ -28,21 +28,28 @@ Open [http://localhost:3000](http://localhost:3000).
 ```
 Browser (localhost:3000)
    │
-   │  relative /api/* requests
-   ▼
-Next.js rewrite proxy (next.config.ts)
+   ├─ initial page load ──▶ Next.js Server Component
+   │                          └─ lib/api.server.ts fetches BACKEND_URL directly (server→server)
+   │                          └─ streams the tasks promise to the client, unwrapped with use() under <Suspense>
    │
-   │  proxied to BACKEND_URL (default: http://localhost:3001)
-   ▼
-Express Backend (localhost:3001)
-   │
-   ├── /api/tasks         CRUD, SQLite
-   └── /api/agents/*      Gemini multi-step AI agents
+   └─ mutations / agents ─▶ relative /api/* fetch
+                              └─ next.config.ts rewrite proxy ──▶ BACKEND_URL (default :3001)
+                                                                    ├── /api/tasks      CRUD, SQLite
+                                                                    └── /api/agents/*   multi-step AI agents
 ```
 
-The frontend is a single **App Router** `"use client"` page (`app/page.tsx`). There are no Server
-Components with data-fetching — all data is fetched client-side via native `fetch` through the rewrite
-proxy. This keeps the architecture simple and avoids RSC/streaming complexity.
+Data fetching is split by responsibility:
+
+- **Reads (initial render)** happen in **Server Components** (`app/tasks/page.tsx`,
+  `app/tasks/[id]/page.tsx`) via `lib/api.server.ts`. The list page kicks off the fetch, hands the
+  *promise* to a client view, and `TaskBoard` unwraps it with React's `use()` inside a `<Suspense>`
+  boundary — so the shell paints instantly and the board streams in.
+- **Mutations and agent calls** run client-side through `lib/api.ts`, hitting relative `/api/*` URLs
+  that the `next.config.ts` rewrite proxies to the backend (no CORS, no keys in the browser).
+- After a mutation, the client calls `router.refresh()` to re-run the Server Component fetch.
+
+Routes are defined once in `routes/paths.ts` and consumed through the typed `Links` helper — no
+hardcoded route strings anywhere.
 
 ### Key libraries
 
@@ -60,35 +67,53 @@ proxy. This keeps the architecture simple and avoids RSC/streaming complexity.
 
 ```
 app/
-  globals.css      Tailwind v4 CSS-first theme (blue palette + custom tokens)
-  layout.tsx       Root layout: fonts, Toaster
-  page.tsx         Main page — two-column layout, dialog orchestration
+  globals.css            Tailwind v4 CSS-first theme (blue palette + custom tokens)
+  layout.tsx             Root layout: fonts, Toaster
+  page.tsx               Redirects to /tasks
+  loading.tsx · error.tsx · not-found.tsx · global-error.tsx   Route-level states
+  tasks/
+    page.tsx             Server Component: fetches tasks, streams promise to the view
+    [id]/page.tsx        Server Component: fetches a task + its subtasks → TaskDetailView
+    _components/
+      TasksView.tsx      Client shell: Header + <Suspense>TaskBoard + AgentPanel + create dialog
+      TaskDialog.tsx     Create/edit task dialog
+
+routes/
+  paths.ts               Paths + typed Links helper (single source of truth for routes)
 
 lib/
-  types.ts         Domain types matching the Backend API (Task, Status, Priority…)
-  api.ts           HTTP client: fetch wrapper + all API methods
-  format.ts        Date helpers, label maps
-  utils.ts         cn() utility
+  types.ts               Domain types matching the Backend API (Task, Status, Priority, AgentRun…)
+  api.ts                 Client HTTP wrapper: envelope unwrap, AgentUnavailableError, all methods
+  api.server.ts          Server-side fetchers used by the RSC pages
+  format.ts              Date/age helpers, label maps
+  plan.ts · standup.ts · triage.ts · decompose.ts   Parse + shape each agent's JSON output
+  json.ts                Tolerant JSON extraction (strips markdown code fences)
+  sanitize.ts            URL/text sanitisation for rendered LLM markdown
+  utils.ts               cn() utility
 
 hooks/
-  use-tasks.ts     Fetches flat task list, groups into TaskWithSubtasks[], counts
+  use-tasks.ts           useTaskBoard: groups flat list → TaskWithSubtasks[], filter + sort + counts
+  useAgentRun.ts         Shared agent-call state (loading / result / unavailable, localStorage persist)
+  useDecompose.ts        Decomposition state machine (clarify → suggest → persist)
+  useSubtasks.ts · useTaskEditor.ts · useDialogState.ts · useDebouncedCallback.ts
 
 components/
-  Header.tsx       Logo + "New task" button
-  Toolbar.tsx      Status filter tabs + sort selector
-  TaskCard.tsx     Individual task card with inline subtask checkboxes
-  TaskList.tsx     Loading skeletons, empty state, list of TaskCards
-  TaskDialog.tsx   Create/edit task dialog
-  badges.tsx       StatusBadge, PriorityBadge, ModelBadge
-  Markdown.tsx     Renders LLM markdown output
-  ui/              shadcn/ui primitives (button, dialog, select, tabs…)
+  Header.tsx · Toolbar.tsx          Header (+ action slot) and status filter / sort controls
+  TaskBoard.tsx                     use(promise) → useTaskBoard → grouped list (under Suspense)
+  TaskBoardSkeleton.tsx             Streaming fallback
+  TaskList.tsx · TaskCard.tsx       Empty/loading states and navigational task cards
+  TaskDetailView.tsx                Detail page: inline edit, subtasks, inline decompose
+  SubtaskDialog.tsx · ConfirmDialog.tsx
+  badges.tsx                        StatusBadge, PriorityBadge, ModelBadge
+  Markdown.tsx · ErrorDisplay.tsx
+  ui/                               shadcn/ui primitives (button, dialog, select, tabs…)
   agents/
-    AgentPanel.tsx         Sticky sidebar with Plan day / Triage tabs
-    AgentTrace.tsx         Multi-step progress visualiser
-    PlanDay.tsx            Prioritisation agent panel
-    StaleTriage.tsx        Stale-sweeper agent panel
-    DecomposeDialog.tsx    Task decomposition dialog
-    StatusUpdateDialog.tsx Status-update (Slack-message) dialog
+    AgentPanel.tsx                  Sticky sidebar, tabs: Plan day / Standup / Triage
+    PlanDay.tsx + DayPlanView.tsx   Prioritisation agent + rendered day plan
+    StandupPanel.tsx + StandupView.tsx + SlackMessageCard.tsx   Status-update agent
+    StaleTriage.tsx + TriageView.tsx                            Stale-sweeper agent
+    AgentTrace.tsx                  Multi-step progress visualiser
+    AgentUnavailable.tsx            Graceful "no API key" card
 ```
 
 ---
@@ -102,21 +127,22 @@ automatically.
 ### Subtasks
 
 The Backend models subtasks as regular Tasks with a `parentId` (one-level nesting cap). There are
-**no independent subtask entities** — `GET /api/tasks` returns a flat list; the `use-tasks` hook
-groups them client-side. "Done" state is `status === "done"`, not a boolean flag.
+**no independent subtask entities** — `GET /api/tasks` returns a flat list; the `useTaskBoard` hook
+(`hooks/use-tasks.ts`) groups them. "Done" state is `status === "done"`, not a boolean flag.
 
 ### AI agents
 
 All four agent endpoints (`/api/agents/prioritize`, `/decompose`, `/status-update`, `/sweep-stale`)
 return:
 ```json
-{ "data": { "output": "...", "model": "gemini-2.5-flash", "steps": [...] } }
+{ "data": { "output": "...", "model": "gemini-2.5-flash | claude-…", "steps": [...] } }
 ```
-- `output` is markdown for most agents, a JSON string for decompose.
+- `output` is markdown or a JSON string depending on the agent; the `lib/{plan,standup,triage,decompose}.ts`
+  helpers parse and shape each one (with `lib/json.ts` stripping any markdown code fences first).
 - `steps` is the raw tool-call trace from the multi-step agent loop.
-- Without `GEMINI_API_KEY`, all agents return **503**. The UI catches
-  `AgentUnavailableError` and shows a graceful "Set GEMINI_API_KEY" card instead of crashing.
-  CRUD still works without a key.
+- The backend serves agents with Gemini **or** Claude. When neither key is configured it returns
+  **503**; the UI catches `AgentUnavailableError` and renders the `AgentUnavailable` card instead of
+  crashing. CRUD still works without any key.
 
 ---
 
@@ -126,28 +152,12 @@ return:
 |---|---|---|
 | `BACKEND_URL` | `http://localhost:3001` | URL of the Express backend (server-side only, used by rewrite proxy) |
 
-Copy `.env.example` to `.env.local` and edit as needed.
+Copy `.env.example` to `.env.local` (or `.env`) and edit as needed.
 
 ---
 
-## AGENT_LOG
+## Working with the coding agent
 
-This frontend was implemented by Claude Code (claude-opus-4-8) using the Claude Design handoff
-bundle (exported from claude.ai/design) as a reference.
-
-**What the agent generated:** The complete component tree, shadcn/ui setup, Tailwind v4 CSS-first
-theme (blue variant), data layer (`lib/api.ts`, `lib/types.ts`, `hooks/use-tasks.ts`), all agent UI
-components, and this README.
-
-**What was adapted vs the reference design:** The reference design used an independent demo backend
-with embedded subtask objects, string IDs, raw JSON responses, structured agent result types, and
-`/api/agents/status` endpoint. All of these were rewritten to match the real Backend's contract:
-numeric IDs, `parentId` one-level subtask nesting, `{data}` envelopes, `{output: string}` agent
-responses parsed from markdown/JSON, and graceful 503 handling. The orange/terracotta colour theme
-was swapped to blue per user preference.
-
-**Manual edits:** The `DecomposeDialog` needed extra JSON-parse error handling since the Backend's
-`output` format can vary. The `StatusUpdateDialog` added an optional `notes` textarea (the Backend
-supports this; the reference design omitted it). The `StaleTriage` component was simplified from
-per-item action buttons to a single "Apply safe fixes" re-run with `apply: true` (the Backend's
-`sweep-stale` endpoint handles the decision logic internally).
+This frontend was scaffolded and iterated on with Claude Code. See **[`AGENT_LOG.md`](./AGENT_LOG.md)**
+for the honest, session-by-session account of what the agent generated, what was adapted from the
+reference design, and what was changed by hand.
